@@ -6,6 +6,7 @@ import { Keyboard, Sparkles, ImageUp } from "lucide-react";
 import { GlassPanel } from "@/components/GlassPanel";
 import { ManualInputForm } from "./ManualInputForm";
 import { AIGenerateForm } from "./AIGenerateForm";
+import { OCRUploadForm } from "./OCRUploadForm";
 
 type Mode = "manual" | "ai" | "ocr";
 
@@ -51,13 +52,7 @@ export function CreateDeckClient({ initialMode }: { initialMode: Mode }) {
       <GlassPanel className="p-6 md:p-8">
         {mode === "manual" && <ManualInputForm />}
         {mode === "ai" && <AIGenerateForm />}
-        {mode === "ocr" && (
-          <div className="text-sm text-[var(--text-secondary)] py-12 text-center">
-            圖片 OCR 將在 Phase 4 接入 Gemini。
-            <br />
-            目前可使用「手動輸入」或「AI 生成」建立詞庫。
-          </div>
-        )}
+        {mode === "ocr" && <OCRUploadForm />}
       </GlassPanel>
     </div>
   );

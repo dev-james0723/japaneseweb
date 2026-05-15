@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { GoogleAuthButton } from "@/components/GoogleAuthButton";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export default function SignupPage() {
@@ -20,10 +21,14 @@ export default function SignupPage() {
     setError(null);
     setInfo(null);
     const supabase = createSupabaseBrowserClient();
+    const emailRedirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent("/dashboard")}`;
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { display_name: displayName } },
+      options: {
+        data: { display_name: displayName },
+        emailRedirectTo,
+      },
     });
     setLoading(false);
     if (error) {
@@ -45,6 +50,17 @@ export default function SignupPage() {
         <p className="text-sm text-[var(--text-secondary)] mb-6">
           開始你的日文知識網絡。
         </p>
+
+        <GoogleAuthButton label="使用 Google 註冊" />
+
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center" aria-hidden>
+            <div className="w-full border-t border-[var(--border-subtle)]" />
+          </div>
+          <div className="relative flex justify-center text-xs">
+            <span className="bg-[rgba(12,10,9,0.35)] px-3 text-[var(--text-muted)]">或使用電郵</span>
+          </div>
+        </div>
 
         <form onSubmit={onSubmit} className="space-y-4">
           <div>

@@ -4,21 +4,24 @@ AI-driven Japanese vocabulary review web app — daily decks, Romaji-assisted re
 
 > 單字唔係一粒粒記。單字要織成一張網，先真正入到腦。
 
-## Status
+## Status — Phases 1–10 implemented
 
-Phase 1–3 scaffolded:
-
-- ✅ Next.js 15 + TS + Tailwind + Liquid Glass design tokens (`Design.md`)
-- ✅ Supabase Auth (login / signup) + middleware-protected app routes
-- ✅ Database schema with RLS (12 tables, see `supabase/migrations/0001_init.sql`)
-- ✅ Dashboard + Sidebar + TopBar shell, Traditional Chinese UI
-- ✅ `JapaneseText` ruby renderer with `show_romaji` cookie/profile toggle
-- ✅ `SpeakerButton` (UI only — Phase 6 wires Amazon Polly + cache)
-- ✅ Manual deck creation (`/decks/new?mode=manual`)
-- ✅ AI vocabulary generation (`/api/ai/generate-vocabulary`, OpenAI Chat Completions, Zod-validated)
-- ✅ Settings (Romaji toggle, TTS voice, default JLPT level, daily word count)
-
-Pending phases (4–10): Gemini OCR · AI word enrichment · Polly TTS + cache · Review engine · Calendar · Connection graph · GPT Image 2 mnemonic generation.
+- ✅ **Phase 1** Next.js 15 + TS + Tailwind + Liquid Glass design tokens (`Design.md`)
+- ✅ **Phase 1** Supabase Auth (email + Google OAuth) + middleware-protected app routes
+- ✅ **Phase 1** Database schema with RLS — 12 tables (`supabase/migrations/0001_init.sql`) + Storage buckets (`0002_storage.sql`)
+- ✅ **Phase 1** Dashboard + Sidebar + TopBar shell, Traditional Chinese UI
+- ✅ **Phase 2** Manual deck creation (`/decks/new?mode=manual`)
+- ✅ **Phase 3** AI vocabulary generation (`/api/ai/generate-vocabulary`, OpenAI JSON mode, Zod-validated)
+- ✅ **Phase 4** Gemini OCR (`/api/ocr/gemini` + `OCRUploadForm` with editable extract-then-confirm flow)
+- ✅ **Phase 5** Word enrichment (`/api/ai/analyze-vocabulary`) — Romaji, examples, mnemonics, verb forms, adjective forms
+- ✅ **Phase 6** Amazon Polly TTS + Supabase Storage cache keyed by sha256(text+voice+lang+provider)
+- ✅ **Phase 7** Spaced repetition (D0/D1/D3/D7/D14/D30/D60) — `/review` session + `/api/review/submit`
+- ✅ **Phase 8** Calendar (`/calendar`) — month grid with deck-count markers + selected day panel
+- ✅ **Phase 9** Smart connections (`/api/ai/generate-connections`) + `/connections` index
+- ✅ **Phase 10** GPT Image 2 (`/api/images/generate`) — deck-scene and per-word mnemonic, persisted to Storage
+- ✅ **DailyDeckTabs** — 單字 / 分組 / 圖像記憶 / 例句 / 小測 / 連結 on `/decks/[id]`
+- ✅ **Quiz** — recognition + 4-option multiple choice on each deck, records to `quiz_attempts` and reschedules via SRS
+- ✅ **Quiz log** at `/quizzes`
 
 ## Setup
 

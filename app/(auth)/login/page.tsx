@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { GoogleAuthButton } from "@/components/GoogleAuthButton";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const search = useSearchParams();
   const next = search.get("next") ?? "/dashboard";
@@ -37,6 +38,17 @@ export default function LoginPage() {
         <p className="text-sm text-[var(--text-secondary)] mb-6">
           歡迎回來，繼續今日的日文學習。
         </p>
+
+        <GoogleAuthButton nextPath={next} />
+
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center" aria-hidden>
+            <div className="w-full border-t border-[var(--border-subtle)]" />
+          </div>
+          <div className="relative flex justify-center text-xs">
+            <span className="bg-[rgba(12,10,9,0.35)] px-3 text-[var(--text-muted)]">或使用電郵</span>
+          </div>
+        </div>
 
         <form onSubmit={onSubmit} className="space-y-4">
           <div>
@@ -83,5 +95,21 @@ export default function LoginPage() {
         </p>
       </div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen flex items-center justify-center px-4">
+          <div className="glass-panel p-8 w-full max-w-md animate-glassFadeIn">
+            <p className="text-sm text-[var(--text-secondary)] text-center">載入中…</p>
+          </div>
+        </main>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   );
 }

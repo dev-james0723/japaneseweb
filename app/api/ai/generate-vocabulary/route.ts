@@ -2,8 +2,17 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { postgrestUserMessage } from "@/lib/supabase/postgrestUserMessage";
 import { buildGenerateVocabularyPrompt } from "@/lib/ai/prompts/generateVocabularyPrompt";
 import { AIGeneratedDeckSchema } from "@/lib/ai/schemas";
+
+/** OpenAI rejects non-default temperature for some models (e.g. o-series, gpt-5). */
+function modelAllowsCustomTemperature(model: string): boolean {
+  const base = model.trim().toLowerCase().split("/").pop() ?? model;
+  if (/^o[134]/.test(base)) return false;
+  if (/^gpt-5/.test(base)) return false;
+  return true;
+}
 
 const RequestSchema = z.object({
   topic: z.string().min(1).max(80),
@@ -39,7 +48,7 @@ export async function POST(req: Request) {
     const completion = await openai.chat.completions.create({
       model,
       response_format: { type: "json_object" },
-      temperature: 0.6,
+      ...(modelAllowsCustomTemperature(model) ? { temperature: 0.6 } : {}),
       messages: [
         {
           role: "system",
@@ -90,7 +99,7 @@ export async function POST(req: Request) {
     .single();
   if (deckErr || !deck) {
     return NextResponse.json(
-      { error: "建立詞庫失敗：" + (deckErr?.message ?? "未知") },
+      { error: "建立詞庫失敗：" + postgrestUserMessage(deckErr) },
       { status: 500 },
     );
   }
@@ -111,7 +120,10 @@ export async function POST(req: Request) {
 
   const { error: vocabErr } = await supabase.from("vocabulary_items").insert(rows);
   if (vocabErr) {
-    return NextResponse.json({ error: "寫入單字失敗：" + vocabErr.message }, { status: 500 });
+    return NextResponse.json(
+      { error: "寫入單字失敗：" + postgrestUserMessage(vocabErr) },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json({ deckId: deck.id });

@@ -2,16 +2,18 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { GlassPanel } from "@/components/GlassPanel";
-import { JapaneseText } from "@/components/JapaneseText";
-import { SpeakerButton } from "@/components/SpeakerButton";
-import { BookOpen, Calendar } from "lucide-react";
+import { Calendar } from "lucide-react";
+import { DeckTabs } from "./DeckTabs";
 
 export default async function DeckDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }) {
   const { id } = await params;
+  const { tab } = await searchParams;
   const supabase = await createSupabaseServerClient();
 
   const { data: deck } = await supabase
@@ -25,17 +27,49 @@ export default async function DeckDetailPage({
   const { data: items } = await supabase
     .from("vocabulary_items")
     .select(
-      "id, japanese, kana, romaji, meaning_zh, meaning_en, part_of_speech, jlpt_level, notes",
+      "id, japanese, kana, romaji, meaning_zh, meaning_en, part_of_speech, jlpt_level, priority_tier, notes, core_explanation",
     )
     .eq("deck_id", id)
     .order("created_at", { ascending: true });
+
+  const { data: sentences } = await supabase
+    .from("example_sentences")
+    .select("id, japanese_sentence, romaji_sentence, meaning_zh, sentence_type, vocab_id")
+    .eq("deck_id", id)
+    .order("created_at", { ascending: true });
+
+  const { data: images } = await supabase
+    .from("generated_images")
+    .select("id, image_url, image_type, vocab_id, created_at")
+    .eq("deck_id", id)
+    .order("created_at", { ascending: false });
+
+  const vocabIds = (items ?? []).map((v) => v.id);
+  const { data: relationships } = vocabIds.length
+    ? await supabase
+        .from("vocabulary_relationships")
+        .select("id, source_vocab_id, target_vocab_id, relationship_type, explanation, example_sentence")
+        .in("source_vocab_id", vocabIds)
+    : { data: [] as any[] };
+
+  const targetIds = Array.from(
+    new Set((relationships ?? []).map((r) => r.target_vocab_id).filter(Boolean)),
+  );
+  const { data: targetItems } = targetIds.length
+    ? await supabase
+        .from("vocabulary_items")
+        .select("id, japanese, romaji, meaning_zh")
+        .in("id", targetIds)
+    : { data: [] as any[] };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3 text-sm text-[var(--text-muted)]">
         <Link href="/dashboard" className="hover:text-white">今日總覽</Link>
         <span>/</span>
-        <span className="text-white">{deck.title}</span>
+        <Link href="/decks" className="hover:text-white">所有詞庫</Link>
+        <span>/</span>
+        <span className="text-white truncate">{deck.title}</span>
       </div>
 
       <GlassPanel className="p-6 md:p-8">
@@ -51,58 +85,22 @@ export default async function DeckDetailPage({
             </>
           )}
         </div>
-        <h1 className="text-2xl md:text-3xl font-semibold mb-1">{deck.title}</h1>
-        <p className="text-sm text-[var(--text-secondary)]">
+        <h1 className="text-2xl md:text-3xl font-semibold">{deck.title}</h1>
+        <p className="text-sm text-[var(--text-secondary)] mt-1">
           共 {items?.length ?? 0} 個單字
         </p>
       </GlassPanel>
 
-      <section>
-        <div className="flex items-center gap-2 mb-3 px-1">
-          <BookOpen className="w-4 h-4 text-[var(--accent-lime)]" />
-          <h2 className="text-base font-semibold">單字</h2>
-        </div>
-        {items && items.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {items.map((v) => (
-              <GlassPanel key={v.id} className="p-5">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <JapaneseText
-                      text={v.japanese}
-                      romaji={v.romaji}
-                      size="lg"
-                      asBlock
-                    />
-                    {v.kana && (
-                      <div className="text-xs text-[var(--text-muted)] mt-1 font-jp">
-                        {v.kana}
-                      </div>
-                    )}
-                  </div>
-                  <SpeakerButton text={v.japanese} size="md" />
-                </div>
-                {v.meaning_zh && (
-                  <p className="text-sm text-[var(--zh-text)] mt-3">{v.meaning_zh}</p>
-                )}
-                <div className="flex flex-wrap gap-1.5 mt-3">
-                  {v.part_of_speech && <span className="chip">{v.part_of_speech}</span>}
-                  {v.jlpt_level && <span className="chip">{v.jlpt_level}</span>}
-                </div>
-                {v.notes && (
-                  <p className="text-xs text-[var(--text-muted)] mt-3 leading-relaxed">
-                    {v.notes}
-                  </p>
-                )}
-              </GlassPanel>
-            ))}
-          </div>
-        ) : (
-          <GlassPanel variant="subtle" className="p-8 text-center">
-            <p className="text-sm text-[var(--text-secondary)]">這個詞庫尚未有單字。</p>
-          </GlassPanel>
-        )}
-      </section>
+      <DeckTabs
+        deckId={deck.id}
+        deckTitle={deck.title}
+        initialTab={tab ?? "words"}
+        items={items ?? []}
+        sentences={sentences ?? []}
+        images={images ?? []}
+        relationships={(relationships ?? []) as any[]}
+        targets={(targetItems ?? []) as any[]}
+      />
     </div>
   );
 }

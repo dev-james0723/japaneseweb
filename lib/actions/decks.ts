@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { postgrestUserMessage } from "@/lib/supabase/postgrestUserMessage";
 
 const VocabInput = z.object({
   japanese: z.string().min(1).max(120),
@@ -45,7 +46,7 @@ export async function createDeckAction(input: CreateDeckInput) {
     .single();
 
   if (deckErr || !deck) {
-    return { ok: false as const, error: "建立詞庫失敗：" + (deckErr?.message ?? "未知錯誤") };
+    return { ok: false as const, error: "建立詞庫失敗：" + postgrestUserMessage(deckErr) };
   }
 
   const rows = data.items.map((it) => ({
@@ -61,7 +62,7 @@ export async function createDeckAction(input: CreateDeckInput) {
 
   const { error: vocabErr } = await supabase.from("vocabulary_items").insert(rows);
   if (vocabErr) {
-    return { ok: false as const, error: "儲存單字失敗：" + vocabErr.message };
+    return { ok: false as const, error: "儲存單字失敗：" + postgrestUserMessage(vocabErr) };
   }
 
   revalidatePath("/dashboard");

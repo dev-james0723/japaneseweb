@@ -8,3 +8,7 @@ out
 .env*.local
 *.tsbuildinfo
 next-env.d.ts
+.vercel
+.cursor/
+.agents/
+skills-lock.json
