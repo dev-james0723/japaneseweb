@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { GlassPanel } from "@/components/GlassPanel";
 import { JapaneseText } from "@/components/JapaneseText";
@@ -6,27 +7,29 @@ import { BookOpen, Sparkles, ImageUp, PlusCircle, RefreshCw, Flame } from "lucid
 
 export default async function DashboardPage() {
   const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
+  if (!user) redirect("/login");
 
   const today = new Date().toISOString().slice(0, 10);
 
   const { data: todayDecks } = await supabase
     .from("decks")
     .select("id, title, topic, source_type, deck_date")
-    .eq("user_id", user!.id)
+    .eq("user_id", user.id)
     .eq("deck_date", today)
     .order("created_at", { ascending: false });
 
   const { count: newWords } = await supabase
     .from("vocabulary_items")
     .select("id", { count: "exact", head: true })
-    .eq("user_id", user!.id)
+    .eq("user_id", user.id)
     .gte("created_at", `${today}T00:00:00Z`);
 
   const { data: recentVocab } = await supabase
     .from("vocabulary_items")
     .select("id, japanese, romaji, meaning_zh")
-    .eq("user_id", user!.id)
+    .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(6);
 

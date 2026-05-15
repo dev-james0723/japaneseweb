@@ -2,12 +2,11 @@
 
 import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { GoogleAuthButton } from "@/components/GoogleAuthButton";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 function LoginForm() {
-  const router = useRouter();
   const search = useSearchParams();
   const next = search.get("next") ?? "/dashboard";
 
@@ -22,13 +21,14 @@ function LoginForm() {
     setError(null);
     const supabase = createSupabaseBrowserClient();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
     if (error) {
+      setLoading(false);
       setError("登入失敗：" + error.message);
       return;
     }
-    router.push(next);
-    router.refresh();
+    // Full navigation so Set-Cookie from document.cookie is always sent on the
+    // next request, and we avoid RSC + getUser() hanging on Vercel after soft navigation.
+    window.location.assign(next.startsWith("/") ? next : "/dashboard");
   }
 
   return (

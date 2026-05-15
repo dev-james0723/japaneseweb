@@ -28,7 +28,8 @@ export async function confirmOcrImportAction(input: z.infer<typeof ConfirmSchema
     return { ok: false as const, error: "輸入錯誤：" + parsed.error.issues[0]?.message };
   }
   const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) return { ok: false as const, error: "未登入。" };
 
   const { data: deck, error: deckErr } = await supabase

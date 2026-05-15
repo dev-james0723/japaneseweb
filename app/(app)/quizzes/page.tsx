@@ -1,15 +1,18 @@
+import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { GlassPanel } from "@/components/GlassPanel";
 import { Check, X } from "lucide-react";
 
 export default async function QuizzesPage() {
   const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
+  if (!user) redirect("/login");
 
   const { data: attempts } = await supabase
     .from("quiz_attempts")
     .select("id, quiz_type, prompt, user_answer, correct_answer, is_correct, created_at")
-    .eq("user_id", user!.id)
+    .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(100);
 

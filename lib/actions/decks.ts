@@ -31,7 +31,8 @@ export async function createDeckAction(input: CreateDeckInput) {
   const data = parsed.data;
 
   const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) return { ok: false as const, error: "請先登入。" };
 
   const { data: deck, error: deckErr } = await supabase

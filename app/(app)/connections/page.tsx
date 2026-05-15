@@ -1,16 +1,19 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { GlassPanel } from "@/components/GlassPanel";
 import { Network } from "lucide-react";
 
 export default async function ConnectionsIndexPage() {
   const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
+  if (!user) redirect("/login");
 
   const { data: rels } = await supabase
     .from("vocabulary_relationships")
     .select("id, relationship_type, explanation, example_sentence, source_vocab_id, target_vocab_id, created_at")
-    .eq("user_id", user!.id)
+    .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(50);
 

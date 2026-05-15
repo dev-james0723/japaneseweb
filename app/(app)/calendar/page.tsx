@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { GlassPanel } from "@/components/GlassPanel";
 import { CalendarView } from "./CalendarView";
@@ -10,7 +11,9 @@ export default async function CalendarPage({
 }) {
   const { month, date } = await searchParams;
   const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
+  if (!user) redirect("/login");
 
   const today = new Date();
   const [year, mon] = month
@@ -25,7 +28,7 @@ export default async function CalendarPage({
   const { data: monthDecks } = await supabase
     .from("decks")
     .select("id, title, deck_date, topic, source_type")
-    .eq("user_id", user!.id)
+    .eq("user_id", user.id)
     .gte("deck_date", startISO)
     .lte("deck_date", endISO);
 

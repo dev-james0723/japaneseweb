@@ -19,7 +19,8 @@ const RequestSchema = z
 
 export async function POST(req: Request) {
   const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) return NextResponse.json({ error: "未登入" }, { status: 401 });
 
   const openai = getOpenAI();

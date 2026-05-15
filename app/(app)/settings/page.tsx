@@ -1,14 +1,17 @@
 import { GlassPanel } from "@/components/GlassPanel";
+import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { SettingsForm } from "./SettingsForm";
 
 export default async function SettingsPage() {
   const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
+  if (!user) redirect("/login");
   const { data: profile } = await supabase
     .from("profiles")
     .select("display_name, show_romaji, preferred_voice, default_jlpt_level, daily_word_count")
-    .eq("id", user!.id)
+    .eq("id", user.id)
     .maybeSingle();
 
   return (

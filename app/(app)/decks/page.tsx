@@ -1,16 +1,19 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { GlassPanel } from "@/components/GlassPanel";
 import { BookOpen, PlusCircle } from "lucide-react";
 
 export default async function DecksIndexPage() {
   const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
+  if (!user) redirect("/login");
 
   const { data: decks } = await supabase
     .from("decks")
     .select("id, title, topic, source_type, deck_date")
-    .eq("user_id", user!.id)
+    .eq("user_id", user.id)
     .order("deck_date", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(60);

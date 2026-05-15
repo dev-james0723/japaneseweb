@@ -19,7 +19,8 @@ export async function saveSettingsAction(input: z.infer<typeof SettingsSchema>) 
     return { ok: false as const, error: "格式錯誤：" + parsed.error.issues[0]?.message };
   }
   const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) return { ok: false as const, error: "未登入。" };
 
   const { error } = await supabase

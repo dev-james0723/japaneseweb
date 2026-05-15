@@ -1,18 +1,21 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { GlassPanel } from "@/components/GlassPanel";
 import { ReviewSession } from "./ReviewSession";
 
 export default async function ReviewPage() {
   const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
+  if (!user) redirect("/login");
   const today = new Date().toISOString().slice(0, 10);
 
   // Due reviews + freshly-added words that have no review row yet.
   const { data: dueReviews } = await supabase
     .from("reviews")
     .select("vocab_id, status, next_review_date")
-    .eq("user_id", user!.id)
+    .eq("user_id", user.id)
     .lte("next_review_date", today)
     .limit(30);
 
@@ -21,7 +24,7 @@ export default async function ReviewPage() {
   const { data: untracked } = await supabase
     .from("vocabulary_items")
     .select("id")
-    .eq("user_id", user!.id)
+    .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(20);
 

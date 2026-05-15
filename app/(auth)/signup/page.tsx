@@ -2,12 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { GoogleAuthButton } from "@/components/GoogleAuthButton";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export default function SignupPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -36,8 +34,7 @@ export default function SignupPage() {
       return;
     }
     if (data.session) {
-      router.push("/dashboard");
-      router.refresh();
+      window.location.assign("/dashboard");
     } else {
       setInfo("已寄出確認郵件，請至信箱完成驗證。");
     }
