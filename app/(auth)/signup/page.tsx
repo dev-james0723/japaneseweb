@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import Link from "next/link";
 import { GoogleAuthButton } from "@/components/GoogleAuthButton";
 import { signUpWithEmailPassword, type SignupActionState } from "./actions";
@@ -10,6 +10,12 @@ export default function SignupPage() {
     SignupActionState,
     FormData
   >(signUpWithEmailPassword, null);
+
+  useEffect(() => {
+    if (state && "ok" in state && state.ok) {
+      window.location.assign(state.next);
+    }
+  }, [state]);
 
   return (
     <main className="min-h-screen flex items-center justify-center px-4">
@@ -64,12 +70,12 @@ export default function SignupPage() {
             />
           </div>
 
-          {state?.error && (
+          {state && "error" in state && (
             <p className="text-sm text-[var(--danger)] bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
               {state.error}
             </p>
           )}
-          {state?.info && (
+          {state && "info" in state && (
             <p className="text-sm text-[var(--accent-sky)] bg-sky-500/10 border border-sky-500/20 rounded-lg px-3 py-2">
               {state.info}
             </p>

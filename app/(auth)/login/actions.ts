@@ -2,11 +2,14 @@
 
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 
 type CookieToSet = { name: string; value: string; options?: CookieOptions };
 
-export type LoginActionState = { error?: string } | null;
+/** Avoid `redirect()` in the same Server Action as `cookies().set` (Vercel/Next can throw); client navigates on `ok`. */
+export type LoginActionState =
+  | { error: string }
+  | { ok: true; next: string }
+  | null;
 
 function safeNextPath(raw: string | null | undefined): string {
   if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return "/dashboard";
@@ -31,24 +34,28 @@ export async function signInWithEmailPassword(
     return { error: "伺服器未設定 Supabase（NEXT_PUBLIC_SUPABASE_URL / ANON_KEY）。" };
   }
 
-  const cookieStore = await cookies();
-  const supabase = createServerClient(url, anon, {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll();
+  try {
+    const cookieStore = await cookies();
+    const supabase = createServerClient(url, anon, {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet: CookieToSet[]) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            cookieStore.set(name, value, options);
+          });
+        },
       },
-      setAll(cookiesToSet: CookieToSet[]) {
-        cookiesToSet.forEach(({ name, value, options }) => {
-          cookieStore.set(name, value, options);
-        });
-      },
-    },
-  });
+    });
 
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) {
-    return { error: "登入失敗：" + error.message };
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      return { error: "登入失敗：" + error.message };
+    }
+    return { ok: true, next };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return { error: "登入時發生錯誤：" + msg };
   }
-
-  redirect(next);
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useActionState } from "react";
+import { Suspense, useActionState, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { GoogleAuthButton } from "@/components/GoogleAuthButton";
@@ -13,6 +13,12 @@ function LoginForm() {
     LoginActionState,
     FormData
   >(signInWithEmailPassword, null);
+
+  useEffect(() => {
+    if (state && "ok" in state && state.ok) {
+      window.location.assign(state.next);
+    }
+  }, [state]);
 
   return (
     <main className="min-h-screen flex items-center justify-center px-4">
@@ -58,7 +64,7 @@ function LoginForm() {
             />
           </div>
 
-          {state?.error && (
+          {state && "error" in state && (
             <p className="text-sm text-[var(--danger)] bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
               {state.error}
             </p>

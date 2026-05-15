@@ -2,11 +2,14 @@
 
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies, headers } from "next/headers";
-import { redirect } from "next/navigation";
 
 type CookieToSet = { name: string; value: string; options?: CookieOptions };
 
-export type SignupActionState = { error?: string; info?: string } | null;
+export type SignupActionState =
+  | { error: string }
+  | { info: string }
+  | { ok: true; next: string }
+  | null;
 
 async function requestOrigin(): Promise<string> {
   const h = await headers();
@@ -43,38 +46,43 @@ export async function signUpWithEmailPassword(
     ? `${origin}/auth/callback?next=${encodeURIComponent("/dashboard")}`
     : undefined;
 
-  const cookieStore = await cookies();
-  const supabase = createServerClient(url, anon, {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll();
+  try {
+    const cookieStore = await cookies();
+    const supabase = createServerClient(url, anon, {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet: CookieToSet[]) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            cookieStore.set(name, value, options);
+          });
+        },
       },
-      setAll(cookiesToSet: CookieToSet[]) {
-        cookiesToSet.forEach(({ name, value, options }) => {
-          cookieStore.set(name, value, options);
-        });
+    });
+
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { display_name: displayName || undefined },
+        ...(emailRedirectTo ? { emailRedirectTo } : {}),
       },
-    },
-  });
+    });
 
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: { display_name: displayName || undefined },
-      ...(emailRedirectTo ? { emailRedirectTo } : {}),
-    },
-  });
+    if (error) {
+      return { error: "註冊失敗：" + error.message };
+    }
 
-  if (error) {
-    return { error: "註冊失敗：" + error.message };
+    if (data.session) {
+      return { ok: true, next: "/dashboard" };
+    }
+
+    return {
+      info: "已寄出確認郵件（如專案有啟用），請至信箱完成驗證；若已關閉郵件確認，請改以登入頁登入。",
+    };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return { error: "註冊時發生錯誤：" + msg };
   }
-
-  if (data.session) {
-    redirect("/dashboard");
-  }
-
-  return {
-    info: "已寄出確認郵件（如專案有啟用），請至信箱完成驗證；若已關閉郵件確認，請改以登入頁登入。",
-  };
 }
