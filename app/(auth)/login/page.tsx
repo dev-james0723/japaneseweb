@@ -1,35 +1,18 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useActionState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { GoogleAuthButton } from "@/components/GoogleAuthButton";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { signInWithEmailPassword, type LoginActionState } from "./actions";
 
 function LoginForm() {
   const search = useSearchParams();
   const next = search.get("next") ?? "/dashboard";
-
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    const supabase = createSupabaseBrowserClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      setLoading(false);
-      setError("登入失敗：" + error.message);
-      return;
-    }
-    // Full navigation so Set-Cookie from document.cookie is always sent on the
-    // next request, and we avoid RSC + getUser() hanging on Vercel after soft navigation.
-    window.location.assign(next.startsWith("/") ? next : "/dashboard");
-  }
+  const [state, formAction, isPending] = useActionState<
+    LoginActionState,
+    FormData
+  >(signInWithEmailPassword, null);
 
   return (
     <main className="min-h-screen flex items-center justify-center px-4">
@@ -50,14 +33,14 @@ function LoginForm() {
           </div>
         </div>
 
-        <form onSubmit={onSubmit} className="space-y-4">
+        <form action={formAction} className="space-y-4">
+          <input type="hidden" name="next" value={next} />
           <div>
             <label className="block text-xs text-[var(--text-secondary)] mb-1.5">電子郵件</label>
             <input
               type="email"
+              name="email"
               required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
               className="glass-input w-full"
               placeholder="you@example.com"
               autoComplete="email"
@@ -67,23 +50,26 @@ function LoginForm() {
             <label className="block text-xs text-[var(--text-secondary)] mb-1.5">密碼</label>
             <input
               type="password"
+              name="password"
               required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
               className="glass-input w-full"
               placeholder="••••••••"
               autoComplete="current-password"
             />
           </div>
 
-          {error && (
+          {state?.error && (
             <p className="text-sm text-[var(--danger)] bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
-              {error}
+              {state.error}
             </p>
           )}
 
-          <button type="submit" disabled={loading} className="btn-primary w-full justify-center disabled:opacity-60">
-            {loading ? "登入中..." : "登入"}
+          <button
+            type="submit"
+            disabled={isPending}
+            className="btn-primary w-full justify-center disabled:opacity-60"
+          >
+            {isPending ? "登入中..." : "登入"}
           </button>
         </form>
 

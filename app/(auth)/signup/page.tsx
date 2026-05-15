@@ -1,44 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState } from "react";
 import Link from "next/link";
 import { GoogleAuthButton } from "@/components/GoogleAuthButton";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { signUpWithEmailPassword, type SignupActionState } from "./actions";
 
 export default function SignupPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
-
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    setInfo(null);
-    const supabase = createSupabaseBrowserClient();
-    const emailRedirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent("/dashboard")}`;
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { display_name: displayName },
-        emailRedirectTo,
-      },
-    });
-    setLoading(false);
-    if (error) {
-      setError("註冊失敗：" + error.message);
-      return;
-    }
-    if (data.session) {
-      window.location.assign("/dashboard");
-    } else {
-      setInfo("已寄出確認郵件，請至信箱完成驗證。");
-    }
-  }
+  const [state, formAction, isPending] = useActionState<
+    SignupActionState,
+    FormData
+  >(signUpWithEmailPassword, null);
 
   return (
     <main className="min-h-screen flex items-center justify-center px-4">
@@ -59,13 +30,12 @@ export default function SignupPage() {
           </div>
         </div>
 
-        <form onSubmit={onSubmit} className="space-y-4">
+        <form action={formAction} className="space-y-4">
           <div>
             <label className="block text-xs text-[var(--text-secondary)] mb-1.5">顯示名稱</label>
             <input
               type="text"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
+              name="display_name"
               className="glass-input w-full"
               placeholder="你的暱稱"
             />
@@ -74,9 +44,8 @@ export default function SignupPage() {
             <label className="block text-xs text-[var(--text-secondary)] mb-1.5">電子郵件</label>
             <input
               type="email"
+              name="email"
               required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
               className="glass-input w-full"
               placeholder="you@example.com"
               autoComplete="email"
@@ -86,29 +55,32 @@ export default function SignupPage() {
             <label className="block text-xs text-[var(--text-secondary)] mb-1.5">密碼</label>
             <input
               type="password"
+              name="password"
               required
               minLength={6}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
               className="glass-input w-full"
               placeholder="至少 6 個字元"
               autoComplete="new-password"
             />
           </div>
 
-          {error && (
+          {state?.error && (
             <p className="text-sm text-[var(--danger)] bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
-              {error}
+              {state.error}
             </p>
           )}
-          {info && (
+          {state?.info && (
             <p className="text-sm text-[var(--accent-sky)] bg-sky-500/10 border border-sky-500/20 rounded-lg px-3 py-2">
-              {info}
+              {state.info}
             </p>
           )}
 
-          <button type="submit" disabled={loading} className="btn-primary w-full justify-center disabled:opacity-60">
-            {loading ? "建立中..." : "建立帳戶"}
+          <button
+            type="submit"
+            disabled={isPending}
+            className="btn-primary w-full justify-center disabled:opacity-60"
+          >
+            {isPending ? "建立中..." : "建立帳戶"}
           </button>
         </form>
 
