@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getOpenAI } from "@/lib/ai/openai";
-import { runAnalyzeVocabularyForDeck } from "@/lib/ai/runAnalyzeVocabularyForDeck";
+import { runDeckAutoFillPipeline } from "@/lib/ai/runDeckAutoFill";
+
+export const runtime = "nodejs";
+export const maxDuration = 300;
 
 const RequestSchema = z.object({
   deckId: z.string().uuid(),
@@ -27,17 +30,27 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "輸入錯誤" }, { status: 400 });
   }
 
-  const result = await runAnalyzeVocabularyForDeck({
+  const outcome = await runDeckAutoFillPipeline({
     supabase,
     openai,
     userId: user.id,
     deckId: parsed.data.deckId,
   });
 
-  if (!result.ok) {
-    const status = result.error.includes("沒有單字") ? 400 : 502;
-    return NextResponse.json({ error: result.error, raw: result.raw }, { status });
+  if (outcome.ok && outcome.skipped) {
+    return NextResponse.json({ ok: true, skipped: true, reason: outcome.reason });
   }
 
-  return NextResponse.json({ ok: true, enriched: result.enrichedCount });
+  if (!outcome.ok) {
+    return NextResponse.json(
+      { ok: false, error: outcome.error, steps: outcome.steps },
+      { status: 502 },
+    );
+  }
+
+  return NextResponse.json({
+    ok: true,
+    steps: outcome.steps,
+    memoryImageFailures: outcome.memoryImageFailures,
+  });
 }

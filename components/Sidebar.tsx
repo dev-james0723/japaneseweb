@@ -2,34 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  LayoutDashboard,
-  BookOpen,
-  PlusCircle,
-  Sparkles,
-  ImageUp,
-  RefreshCw,
-  CalendarDays,
-  Network,
-  CircleHelp,
-  Settings,
-  LogOut,
-} from "lucide-react";
+import { LogOut } from "lucide-react";
 import clsx from "clsx";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-
-const NAV = [
-  { href: "/dashboard", label: "今日總覽", icon: LayoutDashboard },
-  { href: "/decks", label: "今日詞庫", icon: BookOpen },
-  { href: "/decks/new", label: "建立詞庫", icon: PlusCircle },
-  { href: "/decks/new?mode=ai", label: "AI 生成", icon: Sparkles },
-  { href: "/decks/new?mode=ocr", label: "圖片 OCR", icon: ImageUp },
-  { href: "/review", label: "待複習", icon: RefreshCw },
-  { href: "/calendar", label: "學習日曆", icon: CalendarDays },
-  { href: "/connections", label: "智能連結", icon: Network },
-  { href: "/quizzes", label: "小測紀錄", icon: CircleHelp },
-  { href: "/settings", label: "設定", icon: Settings },
-];
+import { APP_NAV, isNavItemActive } from "@/lib/appNav";
 
 export function Sidebar({ displayName }: { displayName?: string | null }) {
   const pathname = usePathname();
@@ -50,11 +26,8 @@ export function Sidebar({ displayName }: { displayName?: string | null }) {
       </div>
 
       <nav className="flex-1 flex flex-col gap-1">
-        {NAV.map((item) => {
-          const active =
-            pathname === item.href ||
-            (item.href !== "/dashboard" && pathname.startsWith(item.href.split("?")[0]) && item.href.split("?")[0] !== "/decks/new") ||
-            (item.href === "/decks/new" && pathname === "/decks/new");
+        {APP_NAV.map((item) => {
+          const active = isNavItemActive(pathname, item.href);
           const Icon = item.icon;
           return (
             <Link

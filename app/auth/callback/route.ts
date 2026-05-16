@@ -1,5 +1,9 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import {
+  normalizeSupabaseAnonKey,
+  normalizeSupabaseUrl,
+} from "@/lib/supabase/env";
 
 type CookieToSet = { name: string; value: string; options?: CookieOptions };
 
@@ -27,9 +31,17 @@ export async function GET(request: NextRequest) {
   const successUrl = `${origin}${next}`;
   let response = NextResponse.redirect(successUrl);
 
+  const supabaseUrl = normalizeSupabaseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL);
+  const supabaseAnonKey = normalizeSupabaseAnonKey(
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  );
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return NextResponse.redirect(`${origin}/login?error=config`);
+  }
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         getAll() {

@@ -1,5 +1,9 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import {
+  normalizeSupabaseAnonKey,
+  normalizeSupabaseUrl,
+} from "@/lib/supabase/env";
 
 type CookieToSet = { name: string; value: string; options?: CookieOptions };
 
@@ -36,8 +40,10 @@ export async function middleware(request: NextRequest) {
 }
 
 async function runMiddleware(request: NextRequest) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+  const supabaseUrl = normalizeSupabaseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL);
+  const supabaseAnonKey = normalizeSupabaseAnonKey(
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  );
 
   if (!supabaseUrl || !supabaseAnonKey) {
     console.error(

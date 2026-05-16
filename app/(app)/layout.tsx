@@ -38,7 +38,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="min-h-screen flex">
       <Sidebar displayName={profile?.display_name} />
       <div className="flex-1 min-w-0">
-        <TopBar streak={0} dueCount={due} />
+        <TopBar streak={0} dueCount={due} displayName={profile?.display_name} />
         <div className="px-4 md:px-6 py-6 md:py-8 max-w-[1360px] mx-auto">
           {children}
         </div>

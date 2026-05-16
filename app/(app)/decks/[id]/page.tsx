@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { GlassPanel } from "@/components/GlassPanel";
-import { Calendar } from "lucide-react";
+import type { VocabularyMemorySessionView } from "@/lib/vocabularyMemory/types";
+import { DeckDetailTitleCard } from "@/components/DeckDetailTitleCard";
 import { DeckTabs } from "./DeckTabs";
 
 export default async function DeckDetailPage({
@@ -18,7 +18,9 @@ export default async function DeckDetailPage({
 
   const { data: deck } = await supabase
     .from("decks")
-    .select("id, title, topic, source_type, deck_date, created_at")
+    .select(
+      "id, title, topic, source_type, deck_date, created_at, ai_auto_fill_completed, ai_auto_fill_attempts, ai_auto_fill_last_error",
+    )
     .eq("id", id)
     .maybeSingle();
 
@@ -37,6 +39,61 @@ export default async function DeckDetailPage({
     .select("id, japanese_sentence, romaji_sentence, meaning_zh, sentence_type, vocab_id")
     .eq("deck_id", id)
     .order("created_at", { ascending: true });
+
+  const { data: latestMem } = await supabase
+    .from("vocabulary_sessions")
+    .select("id, source_input, extracted_vocabulary, created_at")
+    .eq("deck_id", id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  let memorySession: VocabularyMemorySessionView | null = null;
+
+  if (latestMem) {
+    const { data: memGroups } = await supabase
+      .from("vocabulary_storyline_groups")
+      .select(
+        "id, group_index, title_traditional_chinese, storyline_japanese, storyline_traditional_chinese, words, image_prompt, image_url, generation_status, error_message",
+      )
+      .eq("session_id", latestMem.id)
+      .order("group_index", { ascending: true });
+
+    const ev = (latestMem.extracted_vocabulary ?? []) as Array<{
+      word?: string;
+      reading?: string;
+      meaningTraditionalChinese?: string;
+    }>;
+
+    memorySession = {
+      id: latestMem.id,
+      sourceInput: latestMem.source_input,
+      vocabulary: ev.map((x) => ({
+        word: x.word ?? "",
+        reading: x.reading,
+        meaningTraditionalChinese: x.meaningTraditionalChinese,
+      })),
+      storylineGroups: (memGroups ?? []).map((g) => ({
+        id: g.id,
+        groupIndex: g.group_index,
+        titleTraditionalChinese: g.title_traditional_chinese,
+        storylineJapanese: g.storyline_japanese,
+        storylineTraditionalChinese: g.storyline_traditional_chinese,
+        words: (g.words ?? []) as Array<{
+          word: string;
+          reading?: string | null;
+          meaningTraditionalChinese?: string | null;
+          visualAnchor?: string | null;
+          roleInStory?: string | null;
+        }>,
+        imagePrompt: g.image_prompt,
+        imageUrl: g.image_url,
+        generationStatus: g.generation_status,
+        errorMessage: g.error_message,
+      })),
+      createdAt: latestMem.created_at,
+    };
+  }
 
   const { data: images } = await supabase
     .from("generated_images")
@@ -72,42 +129,30 @@ export default async function DeckDetailPage({
         <span className="text-white truncate">{deck.title}</span>
       </div>
 
-      <GlassPanel className="p-6 md:p-8">
-        <div className="flex items-center gap-2 text-xs text-[var(--text-muted)] mb-2">
-          <Calendar className="w-3.5 h-3.5" />
-          {deck.deck_date}
-          <span>·</span>
-          <span>{sourceLabel(deck.source_type)}</span>
-          {deck.topic && (
-            <>
-              <span>·</span>
-              <span>{deck.topic}</span>
-            </>
-          )}
-        </div>
-        <h1 className="text-2xl md:text-3xl font-semibold">{deck.title}</h1>
-        <p className="text-sm text-[var(--text-secondary)] mt-1">
-          共 {items?.length ?? 0} 個單字
-        </p>
-      </GlassPanel>
+      <DeckDetailTitleCard
+        deckId={deck.id}
+        initialTitle={deck.title}
+        deckDate={deck.deck_date}
+        sourceType={deck.source_type}
+        topic={deck.topic}
+        itemCount={items?.length ?? 0}
+      />
 
       <DeckTabs
         deckId={deck.id}
         deckTitle={deck.title}
+        deckTopic={deck.topic}
         initialTab={tab ?? "words"}
         items={items ?? []}
         sentences={sentences ?? []}
         images={images ?? []}
+        memorySession={memorySession}
         relationships={(relationships ?? []) as any[]}
         targets={(targetItems ?? []) as any[]}
+        aiAutoFillCompleted={deck.ai_auto_fill_completed ?? false}
+        aiAutoFillAttempts={deck.ai_auto_fill_attempts ?? 0}
+        aiAutoFillLastError={deck.ai_auto_fill_last_error ?? null}
       />
     </div>
   );
-}
-
-function sourceLabel(s: string) {
-  if (s === "manual") return "手動輸入";
-  if (s === "ocr") return "圖片 OCR";
-  if (s === "ai_generated") return "AI 生成";
-  return s;
 }

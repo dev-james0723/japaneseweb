@@ -103,3 +103,82 @@ export async function createDeckFromTextAction(formData: FormData) {
     items,
   });
 }
+
+const DeckIdSchema = z.string().uuid();
+
+const UpdateDeckTitleSchema = z.object({
+  deckId: z.string().uuid(),
+  title: z.string().trim().min(1).max(120),
+});
+
+export async function updateDeckTitleAction(input: {
+  deckId: string;
+  title: string;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const parsed = UpdateDeckTitleSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: "標題格式不正確：" + parsed.error.issues[0]?.message };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
+  if (!user) return { ok: false, error: "請先登入。" };
+
+  const { data, error } = await supabase
+    .from("decks")
+    .update({ title: parsed.data.title })
+    .eq("id", parsed.data.deckId)
+    .eq("user_id", user.id)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    return { ok: false, error: "更新失敗：" + postgrestUserMessage(error) };
+  }
+  if (!data) {
+    return { ok: false, error: "找不到詞庫或無權限修改。" };
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/decks");
+  revalidatePath("/calendar");
+  revalidatePath(`/decks/${parsed.data.deckId}`);
+  return { ok: true };
+}
+
+export async function deleteDeckAction(
+  deckId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!DeckIdSchema.safeParse(deckId).success) {
+    return { ok: false, error: "無效的詞庫。" };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
+  if (!user) return { ok: false, error: "請先登入。" };
+
+  const { data, error } = await supabase
+    .from("decks")
+    .delete()
+    .eq("id", deckId)
+    .eq("user_id", user.id)
+    .select("id");
+
+  if (error) {
+    return { ok: false, error: "刪除失敗：" + postgrestUserMessage(error) };
+  }
+  if (!data?.length) {
+    return { ok: false, error: "找不到詞庫或無權限刪除。" };
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/decks");
+  revalidatePath("/calendar");
+  return { ok: true };
+}

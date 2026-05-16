@@ -2,6 +2,10 @@
 
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import {
+  normalizeSupabaseAnonKey,
+  normalizeSupabaseUrl,
+} from "@/lib/supabase/env";
 
 type CookieToSet = { name: string; value: string; options?: CookieOptions };
 
@@ -28,8 +32,8 @@ export async function signInWithEmailPassword(
     return { error: "請填寫電郵與密碼。" };
   }
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+  const url = normalizeSupabaseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL);
+  const anon = normalizeSupabaseAnonKey(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
   if (!url || !anon) {
     return { error: "伺服器未設定 Supabase（NEXT_PUBLIC_SUPABASE_URL / ANON_KEY）。" };
   }

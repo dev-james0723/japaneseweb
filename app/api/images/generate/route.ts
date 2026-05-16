@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createSupabaseServerClient, createSupabaseServiceClient } from "@/lib/supabase/server";
 import { getOpenAI, getImageModel } from "@/lib/ai/openai";
-import { buildDeckScenePrompt, buildMnemonicPrompt } from "@/lib/ai/prompts/imagePromptBuilder";
+import { buildMnemonicPrompt } from "@/lib/ai/prompts/imagePromptBuilder";
+import { generateDeckSceneImage } from "@/lib/ai/generateDeckSceneImage";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -19,7 +20,9 @@ const RequestSchema = z
 
 export async function POST(req: Request) {
   const supabase = await createSupabaseServerClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
   const user = session?.user ?? null;
   if (!user) return NextResponse.json({ error: "未登入" }, { status: 401 });
 
@@ -37,46 +40,40 @@ export async function POST(req: Request) {
     );
   }
 
-  let prompt = "";
-  let deckId: string | null = null;
-  let vocabId: string | null = null;
-
   if (parsed.data.type === "deck_scene") {
-    deckId = parsed.data.deckId!;
-    const { data: deck } = await supabase
-      .from("decks")
-      .select("topic, user_id")
-      .eq("id", deckId)
-      .maybeSingle();
-    if (!deck || deck.user_id !== user.id) {
-      return NextResponse.json({ error: "詞庫不存在。" }, { status: 404 });
-    }
-    const { data: items } = await supabase
-      .from("vocabulary_items")
-      .select("japanese")
-      .eq("deck_id", deckId)
-      .limit(12);
-    prompt = buildDeckScenePrompt({
-      topic: deck.topic,
-      words: (items ?? []).map((x) => x.japanese),
+    const out = await generateDeckSceneImage({
+      supabase,
+      openai,
+      userId: user.id,
+      deckId: parsed.data.deckId!,
     });
-  } else {
-    vocabId = parsed.data.vocabId!;
-    const { data: v } = await supabase
-      .from("vocabulary_items")
-      .select("japanese, meaning_zh, notes, deck_id, user_id")
-      .eq("id", vocabId)
-      .maybeSingle();
-    if (!v || v.user_id !== user.id) {
-      return NextResponse.json({ error: "單字不存在。" }, { status: 404 });
+    if (!out.ok) {
+      return NextResponse.json(
+        { error: out.error },
+        { status: out.error.includes("不存在") ? 404 : 502 },
+      );
     }
-    deckId = v.deck_id;
-    prompt = buildMnemonicPrompt({
-      japanese: v.japanese,
-      meaning: v.meaning_zh,
-      mnemonic: v.notes,
-    });
+    if (out.skipped) {
+      return NextResponse.json({ skipped: true });
+    }
+    return NextResponse.json({ url: out.url });
   }
+
+  const vocabId = parsed.data.vocabId!;
+  const { data: v } = await supabase
+    .from("vocabulary_items")
+    .select("japanese, meaning_zh, notes, deck_id, user_id")
+    .eq("id", vocabId)
+    .maybeSingle();
+  if (!v || v.user_id !== user.id) {
+    return NextResponse.json({ error: "單字不存在。" }, { status: 404 });
+  }
+  const deckId = v.deck_id;
+  const prompt = buildMnemonicPrompt({
+    japanese: v.japanese,
+    meaning: v.meaning_zh,
+    mnemonic: v.notes,
+  });
 
   const model = getImageModel();
   let b64: string;
@@ -84,7 +81,7 @@ export async function POST(req: Request) {
     const result = await openai.images.generate({
       model,
       prompt,
-      size: parsed.data.type === "deck_scene" ? "1536x1024" : "1024x1024",
+      size: "1024x1024",
       n: 1,
     });
     const first = result.data?.[0];
@@ -92,25 +89,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "影像產生失敗。" }, { status: 502 });
     }
     b64 = first.b64_json;
-  } catch (e: any) {
-    return NextResponse.json(
-      { error: "OpenAI 影像生成失敗：" + (e?.message ?? "未知") },
-      { status: 502 },
-    );
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "未知";
+    return NextResponse.json({ error: "OpenAI 影像生成失敗：" + msg }, { status: 502 });
   }
 
-  // Upload to storage.
   const buf = Buffer.from(b64, "base64");
-  const filename = `${user.id}/${Date.now()}-${parsed.data.type}.png`;
+  const filename = `${user.id}/${Date.now()}-mnemonic.png`;
   const service = createSupabaseServiceClient();
   const { error: uploadErr } = await service.storage
     .from("generated-images")
     .upload(filename, buf, { contentType: "image/png", upsert: false });
   if (uploadErr) {
-    return NextResponse.json(
-      { error: "影像儲存失敗：" + uploadErr.message },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "影像儲存失敗：" + uploadErr.message }, { status: 500 });
   }
   const { data: pub } = service.storage.from("generated-images").getPublicUrl(filename);
 
@@ -118,7 +109,7 @@ export async function POST(req: Request) {
     user_id: user.id,
     deck_id: deckId,
     vocab_id: vocabId,
-    image_type: parsed.data.type,
+    image_type: "mnemonic",
     prompt,
     model,
     storage_path: filename,

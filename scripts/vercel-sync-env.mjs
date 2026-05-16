@@ -40,6 +40,8 @@ function isSensitive(name) {
     name === "SUPABASE_SERVICE_ROLE_KEY" ||
     name === "OPENAI_API_KEY" ||
     name === "GEMINI_API_KEY" ||
+    name === "GOOGLE_API_KEY" ||
+    name === "GOOGLE_GENERATIVE_AI_API_KEY" ||
     name === "AWS_SECRET_ACCESS_KEY"
   );
 }
