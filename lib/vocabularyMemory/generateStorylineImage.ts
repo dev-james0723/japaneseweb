@@ -10,6 +10,8 @@ export type StorylineImageGenResult =
   | { ok: true; imageUrl: string; storagePath: string; model: string; prompt: string }
   | { ok: false; error: string };
 
+const IMAGE_GENERATE_TIMEOUT_MS = 120_000;
+
 export async function generateStorylineGroupImage(opts: {
   openai: InstanceType<typeof OpenAI>;
   userId: string;
@@ -21,12 +23,19 @@ export async function generateStorylineGroupImage(opts: {
   const prompt = buildStorylineMemoryStructuredImagePrompt(opts.storyline);
   let b64: string;
   try {
-    const result = await opts.openai.images.generate({
+    const generatePromise = opts.openai.images.generate({
       model,
       prompt,
       size: "1536x1024",
       n: 1,
     });
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(
+        () => reject(new Error(`影像生成逾時（>${IMAGE_GENERATE_TIMEOUT_MS / 1000}s），請稍後按「重生此組圖」。`)),
+        IMAGE_GENERATE_TIMEOUT_MS,
+      );
+    });
+    const result = await Promise.race([generatePromise, timeoutPromise]);
     const first = result.data?.[0];
     if (!first?.b64_json) {
       return { ok: false, error: "影像產生失敗（無資料）。" };

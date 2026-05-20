@@ -6,7 +6,9 @@ import {
 import {
   buildVocabularyMemoryPlanningPrompt,
   buildVocabularyMemoryPlanningRepairPrompt,
+  buildVocabularyMemoryAggressiveRegroupPrompt,
 } from "@/lib/ai/prompts/vocabularyMemoryPlanningPrompt";
+import { errorsIndicateAggressiveRegroup } from "@/lib/vocabularyMemory/planningValidationPolicy";
 import { getTextModel, modelAllowsCustomTemperature } from "@/lib/ai/openai";
 import { validateVocabularyMemoryPlanning } from "@/lib/vocabularyMemory/validatePlanning";
 import type { VocabPlanningInputItem } from "@/lib/ai/prompts/vocabularyMemoryPlanningPrompt";
@@ -71,20 +73,33 @@ export async function runVocabularyMemoryPlanning(opts: {
   let raw = primary.raw;
 
   let v = validateVocabularyMemoryPlanning(planning, opts.expectedJapaneseWords);
-  if (!v.ok) {
-    const repairContent = buildVocabularyMemoryPlanningRepairPrompt({
-      expectedWords: opts.expectedJapaneseWords,
-      previousJson: planning,
-      validationErrors: v.errors,
-    });
+  if (v.ok) {
+    return { planning, raw };
+  }
+
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const aggressive = errorsIndicateAggressiveRegroup(v.errors);
+    const repairContent = aggressive
+      ? buildVocabularyMemoryAggressiveRegroupPrompt({
+          items: opts.items,
+          topicHint: opts.topicHint,
+          expectedWords: opts.expectedJapaneseWords,
+          previousJson: planning,
+          validationErrors: v.errors,
+        })
+      : buildVocabularyMemoryPlanningRepairPrompt({
+          expectedWords: opts.expectedJapaneseWords,
+          previousJson: planning,
+          validationErrors: v.errors,
+        });
     const repaired = await callPlanningModel(opts.openai, repairContent);
     planning = repaired.parsed;
     raw = repaired.raw;
     v = validateVocabularyMemoryPlanning(planning, opts.expectedJapaneseWords);
-    if (!v.ok) {
-      throw new Error("規劃驗證仍失敗：" + v.errors.join("；"));
+    if (v.ok) {
+      return { planning, raw };
     }
   }
 
-  return { planning, raw };
+  throw new Error("規劃驗證仍失敗：" + v.errors.join("；"));
 }

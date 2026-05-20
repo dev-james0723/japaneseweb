@@ -52,5 +52,7 @@ export async function POST(req: Request) {
     ok: true,
     steps: outcome.steps,
     memoryImageFailures: outcome.memoryImageFailures,
+    connectionStepNote: outcome.connectionStepNote,
+    connectionStepFailed: outcome.connectionStepFailed,
   });
 }

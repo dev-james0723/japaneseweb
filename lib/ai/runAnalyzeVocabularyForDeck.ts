@@ -59,9 +59,11 @@ export async function runAnalyzeVocabularyForDeck(opts: {
 
   const validated = Wrapper.safeParse(json);
   if (!validated.success) {
+    const iss = validated.error.issues[0];
+    const loc = iss?.path?.length ? iss.path.join(".") + "：" : "";
     return {
       ok: false,
-      error: "AI 輸出驗證失敗：" + validated.error.issues[0]?.message,
+      error: "AI 輸出驗證失敗：" + loc + (iss?.message ?? validated.error.message),
       raw: json,
     };
   }

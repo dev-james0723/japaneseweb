@@ -2,8 +2,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { GlassPanel } from "@/components/GlassPanel";
-import { JapaneseText } from "@/components/JapaneseText";
-import { BookOpen, Sparkles, ImageUp, PlusCircle, RefreshCw, Flame } from "lucide-react";
+import { fetchOsSettings, fetchTodayBootLog, fetchWeeklyStats, fetchStreak } from "@/lib/os/queries";
+import { LAYER_INFO, LAYER_ORDER, MODE_INFO, PHASE_INFO, layerCompletion } from "@/lib/os/types";
+import { BootSequence } from "./BootSequence";
+
+export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const supabase = await createSupabaseServerClient();
@@ -11,225 +14,142 @@ export default async function DashboardPage() {
   const user = session?.user ?? null;
   if (!user) redirect("/login");
 
-  const today = new Date().toISOString().slice(0, 10);
+  const [osSettings, todayLog, weekly, streak] = await Promise.all([
+    fetchOsSettings(supabase, user.id),
+    fetchTodayBootLog(supabase, user.id),
+    fetchWeeklyStats(supabase, user.id),
+    fetchStreak(supabase, user.id),
+  ]);
 
-  const { data: todayDecks } = await supabase
-    .from("decks")
-    .select("id, title, topic, source_type, deck_date")
-    .eq("user_id", user.id)
-    .eq("deck_date", today)
-    .order("created_at", { ascending: false });
+  const phase = osSettings?.current_phase ?? 1;
+  const phaseInfo = PHASE_INFO[phase];
+  const mode = todayLog?.mode ?? osSettings?.daily_mode ?? "standard";
+  const completion = layerCompletion(todayLog);
+  const daysIntoPhase = osSettings?.phase_started_at
+    ? Math.max(
+        1,
+        Math.floor(
+          (Date.now() - new Date(osSettings.phase_started_at).getTime()) / (1000 * 60 * 60 * 24),
+        ) + 1,
+      )
+    : 1;
 
-  const { count: newWords } = await supabase
-    .from("vocabulary_items")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", user.id)
-    .gte("created_at", `${today}T00:00:00Z`);
-
-  const { data: recentVocab } = await supabase
-    .from("vocabulary_items")
-    .select("id, japanese, romaji, meaning_zh")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(6);
+  const layers: Record<string, boolean> = {
+    boot: todayLog?.boot_layer_done ?? false,
+    input: todayLog?.input_layer_done ?? false,
+    review: todayLog?.review_layer_done ?? false,
+    output: todayLog?.output_layer_done ?? false,
+    debug: todayLog?.debug_layer_done ?? false,
+  };
 
   return (
     <div className="space-y-6">
-      {/* Top: today summary */}
       <GlassPanel className="p-6 md:p-8">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
           <div>
-            <p className="text-xs text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2">
-              {new Date().toLocaleDateString("zh-Hant-TW", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-                weekday: "long",
-              })}
+            <p className="text-[10px] tracking-[0.3em] text-[var(--text-muted)] uppercase mb-2">
+              🌸 Japanese OS · {new Date().toLocaleDateString("zh-Hant-TW", { weekday: "long", month: "long", day: "numeric" })}
             </p>
-            <h1 className="text-2xl md:text-3xl font-semibold mb-1">今日學習</h1>
+            <h1 className="text-2xl md:text-3xl font-semibold mb-1">
+              Phase {phase}: {phaseInfo.name}
+            </h1>
             <p className="text-sm text-[var(--text-secondary)]">
-              把今日的單字織進你的知識網。
+              {phaseInfo.months} · Day {daysIntoPhase} · Target {osSettings?.target_jlpt ?? "N2"}
             </p>
+            <p className="text-xs text-[var(--text-muted)] mt-2">{phaseInfo.goal}</p>
           </div>
-          <div className="flex items-center gap-4">
-            <Stat label="今日新單字" value={newWords ?? 0} accent="lime" />
-            <Stat label="今日詞庫" value={todayDecks?.length ?? 0} accent="sky" />
-            <Stat label="連續學習" value={0} accent="amber" icon={<Flame className="w-3.5 h-3.5" />} />
+          <div className="flex flex-col items-start md:items-end gap-2">
+            <div className="text-[10px] tracking-[0.2em] text-[var(--text-muted)] uppercase">Today&rsquo;s Boot</div>
+            <div className="text-3xl font-semibold tabular-nums text-[var(--accent-lime)]">{completion}%</div>
+            <div className="text-xs text-[var(--text-muted)]">
+              {MODE_INFO[mode].label} mode · {MODE_INFO[mode].minutes} min · Streak {streak} 日
+            </div>
           </div>
         </div>
 
-        <div className="mt-6 flex flex-wrap gap-2">
-          <Link href="/review" className="btn-primary">
-            <RefreshCw className="w-4 h-4" />
-            開始今日複習
-          </Link>
-          <Link href="/decks/new" className="btn-ghost">
-            <PlusCircle className="w-4 h-4" />
-            建立新詞庫
-          </Link>
+        <div className="mt-6 space-y-2">
+          {LAYER_ORDER.map((layer) => {
+            const done = layers[layer];
+            const info = LAYER_INFO[layer];
+            return (
+              <div key={layer} className="flex items-center gap-3">
+                <div className="w-20 text-xs flex items-center gap-1.5 shrink-0">
+                  <span>{info.emoji}</span>
+                  <span className={done ? "text-[var(--accent-lime)]" : "text-[var(--text-secondary)]"}>
+                    {info.label}
+                  </span>
+                </div>
+                <div className="flex-1 h-2 rounded-full bg-white/5 overflow-hidden">
+                  <div className={`h-full transition-all ${done ? "bg-[var(--accent-lime)] w-full" : "bg-white/10 w-0"}`} />
+                </div>
+                <div className="w-10 text-right text-[10px] text-[var(--text-muted)] tabular-nums shrink-0">
+                  {done ? "100%" : "0%"}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </GlassPanel>
 
-      {/* Create deck entries */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <CreateEntry
-          href="/decks/new?mode=manual"
-          icon={<PlusCircle className="w-5 h-5" />}
-          title="手動輸入"
-          body="貼上或輸入一份單字清單，AI 會自動結構化。"
-          accent="lime"
-        />
-        <CreateEntry
-          href="/decks/new?mode=ai"
-          icon={<Sparkles className="w-5 h-5" />}
-          title="AI 生成"
-          body="選一個主題，AI 即時建立 10 個實用單字。"
-          accent="sakura"
-        />
-        <CreateEntry
-          href="/decks/new?mode=ocr"
-          icon={<ImageUp className="w-5 h-5" />}
-          title="圖片 OCR"
-          body="拍下課本或筆記，Gemini 抽取單字並可確認。"
-          accent="sky"
-        />
-      </div>
+      <BootSequence currentMode={mode} layers={layers} />
 
-      {/* Today's decks */}
-      <section>
-        <SectionTitle title="今日詞庫" subtitle="所有在今天建立的學習組" />
-        {todayDecks && todayDecks.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {todayDecks.map((d) => (
-              <Link key={d.id} href={`/decks/${d.id}`}>
-                <GlassPanel className="p-5 hover:bg-white/[0.09] transition-colors h-full">
-                  <div className="flex items-center gap-2 text-[11px] text-[var(--text-muted)] mb-2">
-                    <BookOpen className="w-3 h-3" />
-                    {sourceLabel(d.source_type)}
-                    {d.topic && <span>· {d.topic}</span>}
-                  </div>
-                  <div className="text-base font-medium mb-1">{d.title}</div>
-                  <div className="text-xs text-[var(--text-muted)]">{d.deck_date}</div>
-                </GlassPanel>
-              </Link>
-            ))}
-          </div>
-        ) : (
-          <EmptyState
-            text="今天還沒有詞庫。"
-            cta={{ href: "/decks/new", label: "建立第一個詞庫" }}
+      <GlassPanel className="p-5 md:p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-semibold">📊 This Week (since {weekly.weekStart})</h2>
+          <Link href="/stats" className="text-xs text-[var(--text-muted)] hover:text-white">查看詳細 →</Link>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <WeekStat label="Boot Days" value={`${weekly.bootDays}/7`} accent="lime" />
+          <WeekStat
+            label="New Vocab"
+            value={`${weekly.newVocab}/${osSettings?.weekly_new_vocab_quota ?? 20}`}
+            accent={weekly.newVocab > (osSettings?.weekly_new_vocab_quota ?? 20) ? "amber" : "sky"}
           />
-        )}
-      </section>
+          <WeekStat
+            label="Anki Rate"
+            value={weekly.ankiRate != null ? `${Math.round(weekly.ankiRate * 100)}%` : "—"}
+            accent="sakura"
+          />
+          <WeekStat label="Due Now" value={String(weekly.dueCount)} accent="amber" />
+        </div>
+      </GlassPanel>
 
-      {/* Recent vocab */}
-      <section>
-        <SectionTitle title="最近學過" subtitle="最近加入的單字" />
-        {recentVocab && recentVocab.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {recentVocab.map((v) => (
-              <GlassPanel key={v.id} variant="subtle" className="p-4">
-                <JapaneseText text={v.japanese} romaji={v.romaji} size="lg" />
-                <div className="text-xs text-[var(--text-secondary)] mt-2 line-clamp-2">
-                  {v.meaning_zh ?? "—"}
-                </div>
-              </GlassPanel>
-            ))}
-          </div>
-        ) : (
-          <EmptyState text="尚未有學過的單字。建立詞庫後會在這裡顯示。" />
-        )}
-      </section>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <QuickLink href="/journal" emoji="📓" label="Journal" />
+        <QuickLink href="/mining" emoji="⛏️" label="Sentence Mining" />
+        <QuickLink href="/talk-me" emoji="📞" label="Talk Me" />
+        <QuickLink href="/roleplay" emoji="🎭" label="Roleplay" />
+        <QuickLink href="/grammar" emoji="📖" label="Grammar" />
+        <QuickLink href="/weekly-review" emoji="🗓️" label="Weekly Review" />
+        <QuickLink href="/monthly-audit" emoji="🌙" label="Monthly Audit" />
+        <QuickLink href="/decks" emoji="🃏" label="Vocab Decks" />
+      </div>
     </div>
   );
 }
 
-function Stat({
-  label,
-  value,
-  accent,
-  icon,
-}: {
-  label: string;
-  value: number;
-  accent: "lime" | "sky" | "amber";
-  icon?: React.ReactNode;
-}) {
-  const colorMap = {
+function WeekStat({ label, value, accent }: { label: string; value: string; accent: "lime" | "sky" | "amber" | "sakura" }) {
+  const color = {
     lime: "text-[var(--accent-lime)]",
     sky: "text-[var(--accent-sky)]",
     amber: "text-[var(--accent-amber)]",
-  };
-  return (
-    <div className="text-center md:text-right">
-      <div className="text-[10px] tracking-[0.2em] text-[var(--text-muted)] uppercase mb-1">
-        {label}
-      </div>
-      <div className={`text-2xl font-semibold tabular-nums inline-flex items-center gap-1.5 ${colorMap[accent]}`}>
-        {icon}
-        {value}
-      </div>
-    </div>
-  );
-}
-
-function CreateEntry({
-  href,
-  icon,
-  title,
-  body,
-  accent,
-}: {
-  href: string;
-  icon: React.ReactNode;
-  title: string;
-  body: string;
-  accent: "lime" | "sakura" | "sky";
-}) {
-  const ring = {
-    lime: "bg-[var(--accent-lime-bg)] text-[var(--accent-lime)]",
-    sakura: "bg-pink-300/15 text-[var(--accent-sakura)]",
-    sky: "bg-sky-300/15 text-[var(--accent-sky)]",
+    sakura: "text-[var(--accent-sakura)]",
   }[accent];
   return (
-    <Link href={href}>
-      <GlassPanel className="p-5 h-full hover:bg-white/[0.09] transition-all hover:-translate-y-0.5">
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${ring}`}>
-          {icon}
-        </div>
-        <div className="text-base font-semibold mb-1.5">{title}</div>
-        <div className="text-sm text-[var(--text-secondary)] leading-relaxed">{body}</div>
-      </GlassPanel>
-    </Link>
-  );
-}
-
-function SectionTitle({ title, subtitle }: { title: string; subtitle?: string }) {
-  return (
-    <div className="mb-3 px-1">
-      <h2 className="text-base font-semibold">{title}</h2>
-      {subtitle && <p className="text-xs text-[var(--text-muted)] mt-0.5">{subtitle}</p>}
-    </div>
-  );
-}
-
-function EmptyState({ text, cta }: { text: string; cta?: { href: string; label: string } }) {
-  return (
-    <GlassPanel variant="subtle" className="p-8 text-center">
-      <p className="text-sm text-[var(--text-secondary)] mb-4">{text}</p>
-      {cta && (
-        <Link href={cta.href} className="btn-primary inline-flex">
-          {cta.label}
-        </Link>
-      )}
+    <GlassPanel variant="subtle" className="p-3">
+      <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)] mb-1">{label}</div>
+      <div className={`text-xl font-semibold tabular-nums ${color}`}>{value}</div>
     </GlassPanel>
   );
 }
 
-function sourceLabel(s: string) {
-  if (s === "manual") return "手動輸入";
-  if (s === "ocr") return "圖片 OCR";
-  if (s === "ai_generated") return "AI 生成";
-  return s;
+function QuickLink({ href, emoji, label }: { href: string; emoji: string; label: string }) {
+  return (
+    <Link href={href}>
+      <GlassPanel variant="subtle" className="p-4 hover:bg-white/[0.09] transition-colors h-full flex flex-col gap-1 items-start">
+        <div className="text-xl">{emoji}</div>
+        <div className="text-sm font-medium">{label}</div>
+      </GlassPanel>
+    </Link>
+  );
 }

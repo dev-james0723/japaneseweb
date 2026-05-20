@@ -18,6 +18,12 @@ import {
 import { GlassPanel } from "@/components/GlassPanel";
 import { ImageLightbox } from "@/components/ImageLightbox";
 import { SpeakerButton } from "@/components/SpeakerButton";
+import { AddToNotebookButton } from "@/components/AddToNotebookButton";
+import {
+  notifyAutofillCompleteIfPermittedDeduped,
+  playAutofillCompleteChimeDeduped,
+} from "@/lib/client/autofillCompleteFeedback";
+import { fetchDeckAutofillOnce } from "@/lib/client/deckAutofillOnce";
 import type { VocabularyMemorySessionView } from "@/lib/vocabularyMemory/types";
 
 type Item = {
@@ -79,7 +85,7 @@ type TargetWord = {
 
 export function DeckTabs({
   deckId,
-  deckTitle: _deckTitle,
+  deckTitle,
   deckTopic,
   initialTab,
   items,
@@ -112,60 +118,95 @@ export function DeckTabs({
   );
   const [autoFillBusy, setAutoFillBusy] = useState(false);
   const [autoFillBanner, setAutoFillBanner] = useState<string | null>(null);
-  const autoFillStarted = useRef(false);
+  const mountedRef = useRef(true);
+  const deckIdLiveRef = useRef(deckId);
+  deckIdLiveRef.current = deckId;
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      setAutoFillBusy(false);
+    };
+  }, []);
 
   useEffect(() => {
     if (aiAutoFillCompleted || items.length === 0) return;
     if (aiAutoFillAttempts >= 5) return;
-    if (autoFillStarted.current) return;
-    autoFillStarted.current = true;
 
-    const ac = new AbortController();
+    const startedForDeck = deckId;
 
-    async function run() {
+    void (async () => {
       setAutoFillBusy(true);
       setAutoFillBanner(null);
       try {
-        const res = await fetch("/api/ai/deck-auto-fill", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ deckId }),
-          signal: ac.signal,
-        });
-        const data = await res.json().catch(() => ({}));
+        const { res, data } = await fetchDeckAutofillOnce(deckId);
+
+        const stillThisDeck = deckIdLiveRef.current === startedForDeck;
+        const mounted = mountedRef.current;
+
         if (data.skipped) {
-          autoFillStarted.current = false;
-          router.refresh();
+          if (stillThisDeck && mounted) {
+            if (data.reason === "concurrent_or_raced") {
+              setTimeout(() => router.refresh(), 2000);
+            } else {
+              router.refresh();
+            }
+          }
           return;
         }
         if (!res.ok) {
-          autoFillStarted.current = false;
-          setAutoFillBanner(data?.error ?? "自動 AI 補充失敗。");
+          if (stillThisDeck && mounted) {
+            setAutoFillBanner(data?.error ?? "自動 AI 補充失敗。");
+            router.refresh();
+          }
           return;
         }
-        if (typeof data.memoryImageFailures === "number" && data.memoryImageFailures > 0) {
-          setAutoFillBanner(
-            `分鏡場景圖有 ${data.memoryImageFailures} 組生成失敗，請到「圖像記憶」分頁按該組的「重生此組圖」重試。`,
-          );
+
+        const completedOk = Boolean(res.ok && !data.skipped);
+        if (completedOk) {
+          playAutofillCompleteChimeDeduped(deckId);
+          notifyAutofillCompleteIfPermittedDeduped(deckId, deckTitle);
         }
+
+        if (stillThisDeck && mounted) {
+          const parts: string[] = [];
+          if (typeof data.memoryImageFailures === "number" && data.memoryImageFailures > 0) {
+            parts.push(
+              `分鏡場景圖有 ${data.memoryImageFailures} 組生成失敗，請到「圖像記憶」分頁按該組的「重生此組圖」重試。`,
+            );
+          }
+          if (data.connectionStepFailed) {
+            parts.push("智能連結／混合例句步驟未完成，請到「連結」分頁按「生成連結」重試。");
+          }
+          if (parts.length) setAutoFillBanner(parts.join(" "));
+        }
+
         router.refresh();
       } catch (e: unknown) {
         if ((e as { name?: string })?.name === "AbortError") {
-          autoFillStarted.current = false;
+          const cause = (e as { cause?: unknown }).cause;
+          if (
+            deckIdLiveRef.current === startedForDeck &&
+            mountedRef.current &&
+            cause instanceof DOMException &&
+            cause.name === "TimeoutError"
+          ) {
+            setAutoFillBanner("自動補充逾時（超過約 5 分鐘）。請重新整理頁面後再試。");
+            router.refresh();
+          }
           return;
         }
-        autoFillStarted.current = false;
-        setAutoFillBanner(e instanceof Error ? e.message : "網路錯誤。");
+        if (deckIdLiveRef.current === startedForDeck && mountedRef.current) {
+          setAutoFillBanner(e instanceof Error ? e.message : "網路錯誤。");
+        }
       } finally {
-        setAutoFillBusy(false);
+        if (deckIdLiveRef.current === startedForDeck && mountedRef.current) {
+          setAutoFillBusy(false);
+        }
       }
-    }
-
-    void run();
-    return () => {
-      ac.abort();
-    };
-  }, [deckId, aiAutoFillCompleted, aiAutoFillAttempts, items.length, router]);
+    })();
+  }, [deckId, deckTitle, aiAutoFillCompleted, aiAutoFillAttempts, items.length, router]);
 
   const exhausted = !aiAutoFillCompleted && aiAutoFillAttempts >= 5;
 
@@ -177,7 +218,7 @@ export function DeckTabs({
           <div>
             <p className="font-medium text-white">正在自動補充整份詞庫…</p>
             <p className="text-xs text-[var(--text-muted)] mt-1 leading-relaxed">
-              系統會依序完成：單字與例句分析、分組標籤、詞庫場景圖（舊版）、分鏡故事與場景圖。影像步驟可能需數分鐘，請勿關閉此頁。
+              系統會依序完成：單字與例句分析、分組標籤、分鏡故事與場景圖、智能連結與混合例句。你可離開此頁或切換其他功能，補充會在伺服器繼續；完成時會有提示音（請先與頁面互動過一次，瀏覽器才允許播放）。
             </p>
           </div>
         </GlassPanel>
@@ -188,9 +229,35 @@ export function DeckTabs({
         </p>
       )}
       {exhausted && aiAutoFillLastError && !autoFillBusy && !autoFillBanner && (
-        <p className="text-sm text-[var(--danger)] bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
-          自動補充多次失敗：{aiAutoFillLastError} 請稍後重新整理頁面再試。
-        </p>
+        <div className="space-y-2">
+          <p className="text-sm text-[var(--danger)] bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+            自動補充多次失敗：{aiAutoFillLastError} 請稍後重新整理頁面再試。
+          </p>
+          <button
+            type="button"
+            onClick={async () => {
+              setAutoFillBusy(true);
+              try {
+                const res = await fetch("/api/ai/deck-auto-fill/reset-attempts", {
+                  method: "POST",
+                  headers: { "content-type": "application/json" },
+                  body: JSON.stringify({ deckId }),
+                });
+                if (!res.ok) {
+                  const d = await res.json().catch(() => ({}));
+                  setAutoFillBanner(d?.error ?? "無法重設，請稍後再試。");
+                  return;
+                }
+                router.refresh();
+              } finally {
+                setAutoFillBusy(false);
+              }
+            }}
+            className="text-xs btn-ghost"
+          >
+            清除失敗次數並再試自動補充
+          </button>
+        </div>
       )}
 
       <div className="glass-panel-subtle p-1.5 inline-flex gap-1 overflow-x-auto max-w-full">
@@ -256,7 +323,7 @@ function WordsTab({ items }: { items: Item[] }) {
     <div className="space-y-4">
       <p className="text-xs text-[var(--text-muted)]">
         建立詞庫後，系統會<strong className="text-[var(--text-secondary)]">自動</strong>
-        為每個單字補上 Romaji、例句、詞性、JLPT、諧音提示、動詞／形容詞變化，並用同一套資料更新「分組」與「例句」分頁。
+        為每個單字補上 Romaji、例句、詞性、JLPT、諧音提示、動詞／形容詞變化，並用同一套資料更新「分組」與「例句」分頁；完成後亦會嘗試建立「圖像記憶」分鏡圖與「連結」分頁的混合例句。
       </p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {items.map((v) => (
@@ -293,6 +360,7 @@ function WordsTab({ items }: { items: Item[] }) {
                 💡 {v.notes}
               </p>
             )}
+            <AddToNotebookButton vocabId={v.id} className="mt-3" />
           </GlassPanel>
         ))}
       </div>
@@ -364,18 +432,18 @@ function ImagesTab({
   memorySession: VocabularyMemorySessionView | null;
   onRefresh: () => void;
 }) {
-  const [loading, setLoading] = useState<"deck" | "memory" | string | null>(null);
+  const [loading, setLoading] = useState<"memory" | string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copyNote, setCopyNote] = useState<string | null>(null);
   const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null);
 
-  async function gen(type: "deck_scene" | "mnemonic", vocabId?: string) {
-    setLoading(type === "deck_scene" ? "deck" : vocabId ?? null);
+  async function genMnemonic(vocabId: string) {
+    setLoading(vocabId);
     setError(null);
     const res = await fetch("/api/images/generate", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ type, deckId: type === "deck_scene" ? deckId : undefined, vocabId }),
+      body: JSON.stringify({ type: "mnemonic", vocabId }),
     });
     const data = await res.json();
     setLoading(null);
@@ -435,7 +503,6 @@ function ImagesTab({
     }
   }
 
-  const deckImages = images.filter((i) => i.image_type === "deck_scene");
   const mnemonicByVocab = new Map<string, GeneratedImage>();
   for (const img of images) {
     if (img.image_type === "mnemonic" && img.vocab_id) {
@@ -446,6 +513,18 @@ function ImagesTab({
   const memGroups = memorySession?.storylineGroups ?? [];
   const memFailCount = memGroups.filter((g) => g.generationStatus === "failed").length;
   const memOkCount = memGroups.filter((g) => g.generationStatus === "completed" && g.imageUrl).length;
+
+  const memPollKey = memGroups.map((g) => `${g.id}:${g.generationStatus}`).join("|");
+  useEffect(() => {
+    const needsPoll = memGroups.some(
+      (g) => g.generationStatus === "pending" || g.generationStatus === "generating",
+    );
+    if (!needsPoll) return;
+    const id = window.setInterval(() => {
+      onRefresh();
+    }, 8000);
+    return () => window.clearInterval(id);
+  }, [memPollKey, onRefresh]);
 
   return (
     <div className="space-y-5">
@@ -472,7 +551,8 @@ function ImagesTab({
           <div>
             <h3 className="text-sm font-medium">分鏡故事記憶場景</h3>
             <p className="text-xs text-[var(--text-muted)] mt-1 max-w-xl">
-              AI 會先為整份詞庫分群、撰寫日中對照小故事，再為每一組各生成一張 16:9 場景圖（含假名標音的日文標籤）。可點圖放大縮放檢視。
+              AI 會先為整份詞庫分群、撰寫日中對照小故事，再為每一組各生成一張獨立的 16:9
+              場景圖（含假名標音的日文標籤）；多組詞會得到多張圖，而不是一張塞滿全部單字的故事拼貼。可點圖放大縮放檢視。
               {deckTopic ? ` 主題提示：${deckTopic}` : ""}
             </p>
           </div>
@@ -631,55 +711,6 @@ function ImagesTab({
       </section>
 
       <section>
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h3 className="text-sm font-medium">詞庫場景圖（舊版）</h3>
-            <p className="text-xs text-[var(--text-muted)] mt-1">
-              單張場景，仍舊資料可繼續瀏覽；新建議使用上方「分鏡故事記憶場景」。
-            </p>
-          </div>
-          <button
-            onClick={() => gen("deck_scene")}
-            disabled={loading === "deck"}
-            className="btn-ghost text-xs disabled:opacity-60"
-          >
-            {loading === "deck" ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Sparkles className="w-3.5 h-3.5" />
-            )}
-            {deckImages.length > 0 ? "重新生成（舊）" : "生成（舊）"}
-          </button>
-        </div>
-        {deckImages.length === 0 ? (
-          <GlassPanel variant="subtle" className="p-8 text-center text-sm text-[var(--text-secondary)]">
-            尚未生成舊版詞庫場景圖。新詞庫會自動產生一張；若仍沒有圖，請稍後重新整理或使用上方按鈕手動生成。
-          </GlassPanel>
-        ) : (
-          <GlassPanel className="p-3 overflow-hidden">
-            <button
-              type="button"
-              className="w-full block relative group"
-              onClick={() =>
-                deckImages[0].image_url &&
-                setLightbox({ src: deckImages[0].image_url, alt: "詞庫場景（舊版）" })
-              }
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={deckImages[0].image_url ?? ""}
-                alt="詞庫場景"
-                className="w-full rounded-xl"
-              />
-              <span className="absolute bottom-2 right-2 text-[10px] px-2 py-0.5 rounded bg-black/60 text-white/90 opacity-0 group-hover:opacity-100 transition-opacity">
-                點擊放大
-              </span>
-            </button>
-          </GlassPanel>
-        )}
-      </section>
-
-      <section>
         <h3 className="text-sm font-medium mb-3">單字記憶圖</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {items.map((it) => {
@@ -713,7 +744,7 @@ function ImagesTab({
                 <div className="flex items-center justify-between gap-2">
                   <div className="font-jp text-sm truncate">{it.japanese}</div>
                   <button
-                    onClick={() => gen("mnemonic", it.id)}
+                    onClick={() => genMnemonic(it.id)}
                     disabled={busy}
                     className="text-xs text-[var(--accent-lime)] hover:underline disabled:opacity-60 inline-flex items-center gap-1"
                   >

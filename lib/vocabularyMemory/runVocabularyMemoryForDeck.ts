@@ -1,5 +1,6 @@
 import type OpenAI from "openai";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { mapConcurrency } from "@/lib/async/mapConcurrency";
 import { runVocabularyMemoryPlanning } from "@/lib/vocabularyMemory/planningPipeline";
 import { generateStorylineGroupImage } from "@/lib/vocabularyMemory/generateStorylineImage";
 
@@ -40,6 +41,8 @@ export async function runVocabularyMemoryForDeck(opts: {
   if (!items?.length) {
     return { ok: false, error: "詞庫中沒有單字。" };
   }
+
+  await supabase.from("vocabulary_sessions").delete().eq("deck_id", deckId).eq("user_id", userId);
 
   const expectedJapaneseWords = items.map((x) => x.japanese);
   const sourceInput = expectedJapaneseWords.join("、");
@@ -128,13 +131,28 @@ export async function runVocabularyMemoryForDeck(opts: {
     .update({ generation_status: "generating", error_message: null, updated_at: now })
     .eq("session_id", sessionId);
 
-  const settled = await Promise.allSettled(
-    insertedGroups.map(async (row) => {
-      const gMeta = planning.storylineGroups[row.group_index];
-      if (!gMeta) {
-        throw new Error("missing planning meta for group " + row.group_index);
-      }
+  /** Limit parallel image API calls to reduce rate limits / long hangs from many concurrent 1536×1024 jobs. */
+  const IMAGE_GEN_CONCURRENCY = 2;
 
+  type RowResult = { groupId: string; ok: boolean; error?: string };
+
+  const imageResults = await mapConcurrency(insertedGroups, IMAGE_GEN_CONCURRENCY, async (row): Promise<RowResult> => {
+    const gMeta = planning.storylineGroups[row.group_index];
+    if (!gMeta) {
+      const msg = "missing planning meta for group " + row.group_index;
+      const ts = new Date().toISOString();
+      await supabase
+        .from("vocabulary_storyline_groups")
+        .update({
+          generation_status: "failed",
+          error_message: msg,
+          updated_at: ts,
+        })
+        .eq("id", row.id);
+      return { groupId: row.id, ok: false, error: msg };
+    }
+
+    try {
       const img = await generateStorylineGroupImage({
         openai,
         userId,
@@ -168,7 +186,7 @@ export async function runVocabularyMemoryForDeck(opts: {
             updated_at: ts,
           })
           .eq("id", row.id);
-        return { groupId: row.id, ok: true as const };
+        return { groupId: row.id, ok: true };
       }
       await supabase
         .from("vocabulary_storyline_groups")
@@ -178,23 +196,9 @@ export async function runVocabularyMemoryForDeck(opts: {
           updated_at: ts,
         })
         .eq("id", row.id);
-      return { groupId: row.id, ok: false as const, error: img.error };
-    }),
-  );
-
-  const imageResults: { groupId: string; ok: boolean; error?: string }[] = [];
-  for (let i = 0; i < settled.length; i++) {
-    const row = insertedGroups[i];
-    const r = settled[i];
-    if (r.status === "fulfilled") {
-      const v = r.value;
-      if (v.ok) {
-        imageResults.push({ groupId: v.groupId, ok: true });
-      } else {
-        imageResults.push({ groupId: v.groupId, ok: false, error: v.error });
-      }
-    } else {
-      const msg = r.reason instanceof Error ? r.reason.message : String(r.reason);
+      return { groupId: row.id, ok: false, error: img.error };
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
       await supabase
         .from("vocabulary_storyline_groups")
         .update({
@@ -203,9 +207,9 @@ export async function runVocabularyMemoryForDeck(opts: {
           updated_at: new Date().toISOString(),
         })
         .eq("id", row.id);
-      imageResults.push({ groupId: row.id, ok: false, error: msg });
+      return { groupId: row.id, ok: false, error: msg };
     }
-  }
+  });
 
   await supabase
     .from("vocabulary_sessions")

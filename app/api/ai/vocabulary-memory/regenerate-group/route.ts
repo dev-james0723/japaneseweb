@@ -122,21 +122,33 @@ function extractBetween(text: string, start: string, end: string): string {
   return slice.trim();
 }
 
+const LEGACY_PLANNER_MARKER =
+  "ADDITIONAL SCENE DIRECTION (English — from vocabulary planner; follow closely)";
+const NEW_PLANNER_MARKER =
+  "Planner scene direction (English — follow unless it conflicts with the single-scene rules above; if it conflicts, obey the single-scene rules):";
+const NEW_PLANNER_END = "Create a vivid, cinematic, bright, learner-friendly Japanese-inspired memory scene.";
+
+const SAFE_PLANNER_FALLBACK =
+  "Depict only this group's vocabulary in one coherent 16:9 scene; do not imply other words, collages, or multi-panel layouts.";
+
 /**
  * After a successful run, `image_prompt` holds the full structured prompt. Extract the planner English
- * block for regeneration. Legacy rows store only the short planner string (no "ADDITIONAL SCENE DIRECTION").
+ * block for regeneration. Legacy rows store only the short planner string (no planner marker).
  */
 function plannerEnglishFromStoredImagePrompt(stored: string): string {
   const s = stored.trim();
   if (!s) {
-    return "Emphasize vivid, memorable depiction of all vocabulary in one coherent scene.";
+    return SAFE_PLANNER_FALLBACK;
   }
-  const marker =
-    "ADDITIONAL SCENE DIRECTION (English — from vocabulary planner; follow closely)";
-  if (!s.includes(marker)) {
-    return s;
+  if (s.includes(NEW_PLANNER_MARKER)) {
+    const inner = extractBetween(s, NEW_PLANNER_MARKER, NEW_PLANNER_END).trim();
+    if (inner) return inner;
   }
-  const inner = extractBetween(s, marker, "IMAGE REQUIREMENTS").trim();
-  if (inner) return inner;
-  return "Emphasize vivid, memorable depiction of all vocabulary in one coherent scene.";
+  if (s.includes(LEGACY_PLANNER_MARKER)) {
+    const inner =
+      extractBetween(s, LEGACY_PLANNER_MARKER, "IMAGE REQUIREMENTS").trim() ||
+      extractBetween(s, LEGACY_PLANNER_MARKER, "STRICT RULES").trim();
+    if (inner) return inner;
+  }
+  return s;
 }

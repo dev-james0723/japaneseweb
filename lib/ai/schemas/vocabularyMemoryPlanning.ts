@@ -1,27 +1,33 @@
 import { z } from "zod";
+import {
+  aiOptionalNullableString,
+  aiRequiredStringMin1,
+} from "@/lib/ai/zodAiCoercion";
+
+const S = aiOptionalNullableString;
 
 /** Stage 1 AI output — vocabulary list + dynamic storyline groups. */
 export const VocabularyMemoryListWordSchema = z.object({
-  word: z.string().min(1),
-  reading: z.string().optional().nullable(),
-  meaningTraditionalChinese: z.string().optional().nullable(),
+  word: aiRequiredStringMin1(),
+  reading: S(),
+  meaningTraditionalChinese: S(),
 });
 
 export const VocabularyMemoryStoryWordSchema = z.object({
-  word: z.string().min(1),
-  reading: z.string().optional().nullable(),
-  meaningTraditionalChinese: z.string().optional().nullable(),
-  visualAnchor: z.string().optional().nullable(),
-  roleInStory: z.string().optional().nullable(),
+  word: aiRequiredStringMin1(),
+  reading: S(),
+  meaningTraditionalChinese: S(),
+  visualAnchor: S(),
+  roleInStory: S(),
 });
 
 export const VocabularyMemoryStorylineGroupSchema = z.object({
   groupId: z.number().int().positive().optional(),
-  titleTraditionalChinese: z.string().min(1),
-  storylineJapanese: z.string().min(1),
-  storylineTraditionalChinese: z.string().min(1),
+  titleTraditionalChinese: aiRequiredStringMin1(),
+  storylineJapanese: aiRequiredStringMin1(),
+  storylineTraditionalChinese: aiRequiredStringMin1(),
   words: z.array(VocabularyMemoryStoryWordSchema).min(1),
-  imagePrompt: z.string().min(1),
+  imagePrompt: aiRequiredStringMin1(),
 });
 
 export const VocabularyMemoryPlanningSchema = z.object({

@@ -1,12 +1,12 @@
 import type OpenAI from "openai";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { runAnalyzeVocabularyForDeck } from "@/lib/ai/runAnalyzeVocabularyForDeck";
-import { generateDeckSceneImage } from "@/lib/ai/generateDeckSceneImage";
+import { runGenerateConnectionsForDeck } from "@/lib/ai/runGenerateConnectionsForDeck";
 import { runVocabularyMemoryForDeck } from "@/lib/vocabularyMemory/runVocabularyMemoryForDeck";
 
 export type DeckAutoFillStep =
   | { step: "analyze"; result: "ok" | "skipped" | "error"; detail?: string }
-  | { step: "deck_scene"; result: "ok" | "skipped" | "error"; detail?: string }
+  | { step: "connections"; result: "ok" | "skipped" | "error"; detail?: string }
   | { step: "memory"; result: "ok" | "skipped" | "error"; detail?: string };
 
 export type DeckAutoFillOutcome =
@@ -16,6 +16,8 @@ export type DeckAutoFillOutcome =
       skipped?: false;
       steps: DeckAutoFillStep[];
       memoryImageFailures?: number;
+      connectionStepNote?: string;
+      connectionStepFailed?: boolean;
     }
   | { ok: false; error: string; steps?: DeckAutoFillStep[] };
 
@@ -90,18 +92,6 @@ export async function runDeckAutoFillPipeline(opts: {
     }
     steps.push({ step: "analyze", result: "ok" });
 
-    const scene = await generateDeckSceneImage({ supabase, openai, userId, deckId });
-    if (!scene.ok) {
-      steps.push({ step: "deck_scene", result: "error", detail: scene.error });
-      await markError(scene.error);
-      return { ok: false, error: scene.error, steps };
-    }
-    steps.push({
-      step: "deck_scene",
-      result: scene.skipped ? "skipped" : "ok",
-      detail: scene.skipped ? "already_exists" : undefined,
-    });
-
     const memory = await runVocabularyMemoryForDeck({ supabase, openai, userId, deckId });
     if (!memory.ok) {
       steps.push({ step: "memory", result: "error", detail: memory.error });
@@ -116,12 +106,34 @@ export async function runDeckAutoFillPipeline(opts: {
       detail: fails > 0 ? `${fails} group image(s) failed` : undefined,
     });
 
+    const connections = await runGenerateConnectionsForDeck({
+      supabase,
+      openai,
+      userId,
+      deckId,
+    });
+    if (connections.ok) {
+      steps.push({
+        step: "connections",
+        result: "ok",
+        detail: connections.note,
+      });
+    } else {
+      steps.push({
+        step: "connections",
+        result: "error",
+        detail: connections.error,
+      });
+    }
+
     await markDone();
 
     return {
       ok: true,
       steps,
       memoryImageFailures: fails > 0 ? fails : undefined,
+      connectionStepNote: connections.ok && connections.note ? connections.note : undefined,
+      connectionStepFailed: !connections.ok,
     };
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "未知錯誤";
