@@ -16,6 +16,16 @@ type Candidate = {
 
 const SOURCES = ["manual", "nhk", "youtube", "talk_me", "podcast", "article", "other"] as const;
 
+const SOURCE_LABELS: Record<(typeof SOURCES)[number], string> = {
+  manual: "手動",
+  nhk: "NHK",
+  youtube: "YouTube",
+  talk_me: "Talk Me",
+  podcast: "Podcast",
+  article: "文章",
+  other: "其他",
+};
+
 export function MiningClient() {
   const [text, setText] = useState("");
   const [sourceType, setSourceType] = useState<(typeof SOURCES)[number]>("manual");
@@ -54,7 +64,7 @@ export function MiningClient() {
         sentences: toSave,
       });
       if (!res.ok) { setMsg(res.error); return; }
-      setMsg(`✓ Saved ${res.saved}`);
+      setMsg(`✓ 已儲存 ${res.saved} 句`);
       setCandidates([]);
       setSelected(new Set());
       setText("");
@@ -76,18 +86,18 @@ export function MiningClient() {
           onChange={(e) => setSourceType(e.target.value as (typeof SOURCES)[number])}
           className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm"
         >
-          {SOURCES.map((s) => <option key={s} value={s}>{s}</option>)}
+          {SOURCES.map((s) => <option key={s} value={s}>{SOURCE_LABELS[s]}</option>)}
         </select>
         <input
           type="text"
-          placeholder="Source title（可選）"
+          placeholder="來源標題（可選）"
           value={sourceTitle}
           onChange={(e) => setSourceTitle(e.target.value)}
           className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm"
         />
         <input
           type="text"
-          placeholder="Source URL（可選）"
+          placeholder="來源網址（可選）"
           value={sourceUrl}
           onChange={(e) => setSourceUrl(e.target.value)}
           className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm"
@@ -96,20 +106,20 @@ export function MiningClient() {
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder="Paste 日文段落…"
+        placeholder="貼上日文段落…"
         rows={6}
         className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm font-jp resize-y focus:border-[var(--accent-lime)] focus:outline-none"
       />
       <div className="flex items-center gap-2">
         <button onClick={mine} disabled={pending || text.length < 10} className="btn-primary text-sm">
-          {pending && !candidates.length ? "Mining…" : "Mine sentences"}
+          {pending && !candidates.length ? "採礦中…" : "擷取句子"}
         </button>
         {msg && <span className="text-xs text-[var(--accent-lime)]">{msg}</span>}
       </div>
 
       {candidates.length > 0 && (
         <div className="space-y-2 mt-2">
-          <div className="text-xs text-[var(--text-muted)] uppercase tracking-[0.2em]">Candidates — 揀要保存嘅</div>
+          <div className="text-xs text-[var(--text-muted)] uppercase tracking-[0.2em]">候選句子 — 揀要保存嘅</div>
           {candidates.map((c, i) => (
             <label
               key={i}
@@ -124,7 +134,7 @@ export function MiningClient() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 text-[10px] text-[var(--text-muted)] mb-1">
                     {c.difficulty_jlpt && <span className="px-1.5 py-0.5 rounded bg-[var(--accent-sky)]/10 text-[var(--accent-sky)]">{c.difficulty_jlpt}</span>}
-                    {c.cloze_target && <span>cloze: {c.cloze_target}</span>}
+                    {c.cloze_target && <span>填空：{c.cloze_target}</span>}
                   </div>
                   <div className="text-sm font-jp">{c.sentence_ja}</div>
                   {c.kana_reading && <div className="text-[10px] text-[var(--text-muted)] font-jp">{c.kana_reading}</div>}
@@ -138,7 +148,7 @@ export function MiningClient() {
             </label>
           ))}
           <button onClick={save} disabled={pending || selected.size === 0} className="btn-primary text-sm">
-            {pending ? "Saving…" : `Save ${selected.size} sentence(s)`}
+            {pending ? "儲存中…" : `儲存 ${selected.size} 句`}
           </button>
         </div>
       )}

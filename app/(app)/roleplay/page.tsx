@@ -20,7 +20,7 @@ export default async function RoleplayPage() {
   return (
     <div className="space-y-4">
       <GlassPanel className="p-6">
-        <h1 className="text-xl font-semibold mb-1">🎭 AI Roleplay</h1>
+        <h1 className="text-xl font-semibold mb-1">🎭 AI 角色扮演</h1>
         <p className="text-xs text-[var(--text-secondary)]">
           選一個場景，AI 扮對手同你練對話。每句會即時糾錯 + 提示下一句點答。
         </p>

@@ -5,26 +5,26 @@ export const PHASE_INFO: Record<
   number,
   { name: string; months: string; goal: string; weeklyVocabQuota: number; weeklyGrammarQuota: number }
 > = {
-  1: { name: "Installation", months: "M1–M2", goal: "假名 95% accuracy + 30 日連續 boot", weeklyVocabQuota: 20, weeklyGrammarQuota: 2 },
-  2: { name: "Basic Boot", months: "M3–M6", goal: "500+ vocab + 可以講今日 schedule", weeklyVocabQuota: 20, weeklyGrammarQuota: 2 },
-  3: { name: "Daily Operation", months: "M7–M12", goal: "1000 vocab + journal 5 句/日 × 14 連續日", weeklyVocabQuota: 20, weeklyGrammarQuota: 2 },
-  4: { name: "Immersion Expansion", months: "M13–M18", goal: "1500 vocab + mining 80+ + N3 mock 70%", weeklyVocabQuota: 25, weeklyGrammarQuota: 3 },
-  5: { name: "Output Activation", months: "M19–M22", goal: "Journal 8 句/日 × 30 日 + 5 language islands", weeklyVocabQuota: 25, weeklyGrammarQuota: 3 },
-  6: { name: "Refinement", months: "M23–M24", goal: "N2 mock 60% + 100 小時 Talk Me", weeklyVocabQuota: 25, weeklyGrammarQuota: 3 },
+  1: { name: "基礎安裝", months: "第 1–2 月", goal: "假名 95% 正確率 + 30 日連續開機", weeklyVocabQuota: 20, weeklyGrammarQuota: 2 },
+  2: { name: "基礎開機", months: "第 3–6 月", goal: "500+ 詞彙 + 可以講今日行程", weeklyVocabQuota: 20, weeklyGrammarQuota: 2 },
+  3: { name: "日常運作", months: "第 7–12 月", goal: "1000 詞彙 + 日記 5 句/日 × 14 連續日", weeklyVocabQuota: 20, weeklyGrammarQuota: 2 },
+  4: { name: "沉浸擴展", months: "第 13–18 月", goal: "1500 詞彙 + 採礦 80+ + N3 模擬 70%", weeklyVocabQuota: 25, weeklyGrammarQuota: 3 },
+  5: { name: "輸出啟動", months: "第 19–22 月", goal: "日記 8 句/日 × 30 日 + 5 個語言島", weeklyVocabQuota: 25, weeklyGrammarQuota: 3 },
+  6: { name: "精煉階段", months: "第 23–24 月", goal: "N2 模擬 60% + 100 小時 Talk Me", weeklyVocabQuota: 25, weeklyGrammarQuota: 3 },
 };
 
 export const MODE_INFO: Record<DailyMode, { label: string; minutes: number; description: string }> = {
-  min: { label: "Min", minutes: 15, description: "15 分鐘最低保底——千祈唔好斷。" },
-  standard: { label: "Standard", minutes: 45, description: "45 分鐘標準 boot——平衡 input / review / output。" },
-  deep: { label: "Deep", minutes: 90, description: "90 分鐘深度學習——加大 immersion + journaling。" },
+  min: { label: "精簡", minutes: 15, description: "15 分鐘最低保底——千祈唔好斷。" },
+  standard: { label: "標準", minutes: 45, description: "45 分鐘標準開機——平衡輸入 / 複習 / 輸出。" },
+  deep: { label: "深度", minutes: 90, description: "90 分鐘深度學習——加大沉浸 + 日記。" },
 };
 
 export const LAYER_INFO: Record<BootLayer, { label: string; emoji: string; description: string }> = {
-  boot: { label: "Boot", emoji: "⚡", description: "朝早 30 秒用日文講今日日期、天氣、心情。" },
-  input: { label: "Input", emoji: "📥", description: "Comprehensible input：NHK Easy、podcast、Talk Me 等。" },
-  review: { label: "Review", emoji: "🔁", description: "Anki due cards 同上週 mining cloze 卡。" },
-  output: { label: "Output", emoji: "📝", description: "Journal、self-talk、roleplay——一定要產出。" },
-  debug: { label: "Debug", emoji: "🔧", description: "Notice gaps、leech cards、文法錯誤回顧。" },
+  boot: { label: "開機", emoji: "⚡", description: "朝早 30 秒用日文講今日日期、天氣、心情。" },
+  input: { label: "輸入", emoji: "📥", description: "可理解輸入：NHK Easy、podcast、Talk Me 等。" },
+  review: { label: "複習", emoji: "🔁", description: "Anki 到期卡 + 上週採礦填空卡。" },
+  output: { label: "輸出", emoji: "📝", description: "日記、自言自語、角色扮演——一定要產出。" },
+  debug: { label: "除錯", emoji: "🔧", description: "整理學習缺口、難記卡、文法錯誤回顧。" },
 };
 
 export const LAYER_ORDER: BootLayer[] = ["boot", "input", "review", "output", "debug"];

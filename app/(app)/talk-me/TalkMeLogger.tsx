@@ -26,7 +26,7 @@ export function TalkMeLogger() {
         addToMined: addToMined && !!sentence,
       });
       if (!res.ok) { setMsg(res.error); return; }
-      setMsg("✓ Logged");
+      setMsg("✓ 已記錄");
       setLessons("");
       setSentence("");
       setShadowing(false);
@@ -40,7 +40,7 @@ export function TalkMeLogger() {
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-3">
         <label className="space-y-1">
-          <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">Duration (min)</div>
+          <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">時長（分鐘）</div>
           <input
             type="number"
             min={1}
@@ -51,18 +51,18 @@ export function TalkMeLogger() {
           />
         </label>
         <label className="space-y-1">
-          <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">Lessons (comma-separated)</div>
+          <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">課程（逗號分隔）</div>
           <input
             type="text"
             value={lessons}
             onChange={(e) => setLessons(e.target.value)}
-            placeholder="Self-intro at café, Ordering food"
+            placeholder="咖啡店自我介紹、點餐"
             className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm"
           />
         </label>
       </div>
       <label className="block space-y-1">
-        <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">Most useful sentence (日文)</div>
+        <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">最有用的一句（日文）</div>
         <input
           type="text"
           value={sentence}
@@ -74,20 +74,20 @@ export function TalkMeLogger() {
       <div className="flex flex-wrap gap-4 text-xs">
         <label className="flex items-center gap-2">
           <input type="checkbox" checked={shadowing} onChange={(e) => setShadowing(e.target.checked)} />
-          Shadowing 3×
+          跟讀 3 次
         </label>
         <label className="flex items-center gap-2">
           <input type="checkbox" checked={convo} onChange={(e) => setConvo(e.target.checked)} />
-          Conversation mode
+          對話模式
         </label>
         <label className="flex items-center gap-2">
           <input type="checkbox" checked={addToMined} onChange={(e) => setAddToMined(e.target.checked)} />
-          Auto-add sentence to mining
+          自動加入句子採礦
         </label>
       </div>
       <div className="flex items-center gap-2">
         <button onClick={submit} disabled={pending} className="btn-primary text-sm">
-          {pending ? "Saving…" : "Save session"}
+          {pending ? "儲存中…" : "儲存時段"}
         </button>
         {msg && <span className="text-xs text-[var(--accent-lime)]">{msg}</span>}
       </div>

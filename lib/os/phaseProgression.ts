@@ -10,12 +10,12 @@ export type PhaseAdvancementCheck = {
 };
 
 const PHASE_THRESHOLDS: Record<number, { minDays: number; minVocab: number; description: string }> = {
-  1: { minDays: 60, minVocab: 100, description: "Installation: 假名熟練 + 100 字 + 60 日 boot" },
-  2: { minDays: 120, minVocab: 500, description: "Basic Boot: 500 字 + Phase 2 滿 4 個月" },
-  3: { minDays: 180, minVocab: 1000, description: "Daily Operation: 1000 字 + Phase 3 滿 6 個月" },
-  4: { minDays: 180, minVocab: 1500, description: "Immersion: 1500 字 + 6 個月" },
-  5: { minDays: 120, minVocab: 1800, description: "Output Activation: 1800 字 + 4 個月" },
-  6: { minDays: 60, minVocab: 2000, description: "Refinement: 2000 字 + 2 個月" },
+  1: { minDays: 60, minVocab: 100, description: "基礎安裝：假名熟練 + 100 字 + 60 日開機" },
+  2: { minDays: 120, minVocab: 500, description: "基礎開機：500 字 + 階段 2 滿 4 個月" },
+  3: { minDays: 180, minVocab: 1000, description: "日常運作：1000 字 + 階段 3 滿 6 個月" },
+  4: { minDays: 180, minVocab: 1500, description: "沉浸擴展：1500 字 + 6 個月" },
+  5: { minDays: 120, minVocab: 1800, description: "輸出啟動：1800 字 + 4 個月" },
+  6: { minDays: 60, minVocab: 2000, description: "精煉階段：2000 字 + 2 個月" },
 };
 
 export async function evaluatePhaseAdvancement(
@@ -53,6 +53,6 @@ export async function evaluatePhaseAdvancement(
     daysIntoPhase,
     vocabCount: vocabCount ?? 0,
     recommendedAdvance: meets,
-    reasons: meets ? [`✓ 符合 Phase ${phase + 1} 條件`] : reasons,
+    reasons: meets ? [`✓ 符合階段 ${phase + 1} 條件`] : reasons,
   };
 }

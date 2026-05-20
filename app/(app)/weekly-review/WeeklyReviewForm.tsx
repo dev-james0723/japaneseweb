@@ -27,7 +27,7 @@ export function WeeklyReviewForm({
   function save() {
     startTransition(async () => {
       const res = await saveWeeklyReviewAction({ weekStart, userReflection: reflection, nextWeekFocus: nextFocus });
-      setMsg(res.ok ? "✓ Saved" : res.error);
+      setMsg(res.ok ? "✓ 已儲存" : res.error);
       if (res.ok) {
         setTimeout(() => setMsg(null), 1500);
         router.refresh();
@@ -40,7 +40,7 @@ export function WeeklyReviewForm({
       const res = await generateWeeklyQuizAction({ weekStart });
       if (!res.ok) { setMsg(res.error); return; }
       setQuiz(res.quiz);
-      setMsg("✓ Quiz generated");
+      setMsg("✓ 小測已生成");
       setTimeout(() => setMsg(null), 1500);
     });
   }
@@ -48,7 +48,7 @@ export function WeeklyReviewForm({
   return (
     <div className="space-y-3">
       <label className="block space-y-1">
-        <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">Reflection</div>
+        <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">反思</div>
         <textarea
           value={reflection}
           onChange={(e) => setReflection(e.target.value)}
@@ -58,7 +58,7 @@ export function WeeklyReviewForm({
         />
       </label>
       <label className="block space-y-1">
-        <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">Next Week Focus</div>
+        <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">下週重點</div>
         <textarea
           value={nextFocus}
           onChange={(e) => setNextFocus(e.target.value)}
@@ -68,14 +68,14 @@ export function WeeklyReviewForm({
         />
       </label>
       <div className="flex items-center gap-2 flex-wrap">
-        <button onClick={save} disabled={pending} className="btn-primary text-sm">{pending ? "Saving…" : "Save"}</button>
-        <button onClick={genQuiz} disabled={pending} className="btn-ghost text-sm">{pending ? "…" : "Generate 10-Q quiz"}</button>
+        <button onClick={save} disabled={pending} className="btn-primary text-sm">{pending ? "儲存中…" : "儲存"}</button>
+        <button onClick={genQuiz} disabled={pending} className="btn-ghost text-sm">{pending ? "…" : "生成 10 題小測"}</button>
         {msg && <span className="text-xs text-[var(--accent-lime)]">{msg}</span>}
       </div>
 
       {quiz?.questions && quiz.questions.length > 0 && (
         <div className="mt-4 space-y-3">
-          <h3 className="text-sm font-semibold">AI Quiz</h3>
+          <h3 className="text-sm font-semibold">AI 小測</h3>
           {quiz.questions.map((q, i) => (
             <div key={i} className="p-3 rounded-xl bg-white/[0.03] border border-white/10">
               {q.type === "mcq" ? (
@@ -94,7 +94,7 @@ export function WeeklyReviewForm({
               ) : (
                 <>
                   <div className="text-sm font-jp">{q.sentence_ja}</div>
-                  <div className="text-xs text-[var(--accent-lime)] mt-1">Answer: {q.answer}</div>
+                  <div className="text-xs text-[var(--accent-lime)] mt-1">答案：{q.answer}</div>
                   {q.hint_zh && <div className="text-xs text-[var(--text-muted)]">{q.hint_zh}</div>}
                 </>
               )}

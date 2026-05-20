@@ -55,34 +55,34 @@ export default async function StatsPage() {
   return (
     <div className="space-y-6">
       <GlassPanel className="p-6">
-        <h1 className="text-xl font-semibold mb-1">📈 Stats — Last 28 days</h1>
+        <h1 className="text-xl font-semibold mb-1">📈 統計 — 最近 28 日</h1>
         <p className="text-xs text-[var(--text-secondary)] mb-4">
-          Phase {advancement?.currentPhase ?? 1} · Day {advancement?.daysIntoPhase ?? 0}
+          階段 {advancement?.currentPhase ?? 1} · 第 {advancement?.daysIntoPhase ?? 0} 日
         </p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Stat label="Boot Days" value={`${bootDays}/28`} accent="lime" />
-          <Stat label="Total Vocab" value={String(totalVocab ?? 0)} accent="sky" />
-          <Stat label="Anki Rate" value={ankiRate != null ? `${Math.round(ankiRate * 100)}%` : "—"} accent="sakura" />
-          <Stat label="Talk Me min" value={String(totalTalkMe)} accent="amber" />
+          <Stat label="開機天數" value={`${bootDays}/28`} accent="lime" />
+          <Stat label="詞彙總數" value={String(totalVocab ?? 0)} accent="sky" />
+          <Stat label="Anki 完成率" value={ankiRate != null ? `${Math.round(ankiRate * 100)}%` : "—"} accent="sakura" />
+          <Stat label="Talk Me 分鐘" value={String(totalTalkMe)} accent="amber" />
         </div>
       </GlassPanel>
 
       {/* Boot rate bar chart */}
       <GlassPanel className="p-5">
-        <h2 className="text-sm font-semibold mb-3">Daily Boot Layers (last 28 days)</h2>
+        <h2 className="text-sm font-semibold mb-3">每日開機層級（最近 28 日）</h2>
         <BootBars logs={logs} sinceStr={sinceStr} />
       </GlassPanel>
 
       {/* Journal sentences */}
       <GlassPanel className="p-5">
-        <h2 className="text-sm font-semibold mb-3">Journal sentences / day</h2>
+        <h2 className="text-sm font-semibold mb-3">日記句數 / 日</h2>
         <JournalBars data={journalRecent ?? []} sinceStr={sinceStr} />
-        <div className="text-xs text-[var(--text-muted)] mt-2">Total entries: {totalJournal ?? 0}</div>
+        <div className="text-xs text-[var(--text-muted)] mt-2">紀錄總數：{totalJournal ?? 0}</div>
       </GlassPanel>
 
       {/* Phase progression */}
       <GlassPanel className="p-5">
-        <h2 className="text-sm font-semibold mb-3">Phase Progression</h2>
+        <h2 className="text-sm font-semibold mb-3">階段進度</h2>
         <div className="grid grid-cols-2 md:grid-cols-6 gap-2 mb-4">
           {[1, 2, 3, 4, 5, 6].map((p) => (
             <div
@@ -95,7 +95,7 @@ export default async function StatsPage() {
                     : "bg-white/[0.02] text-[var(--text-muted)]"
               }`}
             >
-              <div className="font-semibold">P{p}</div>
+              <div className="font-semibold">階段 {p}</div>
               <div className="text-[10px] mt-0.5">{PHASE_INFO[p].name}</div>
               <div className="text-[9px] text-[var(--text-muted)] mt-0.5">{PHASE_INFO[p].months}</div>
             </div>
@@ -105,8 +105,8 @@ export default async function StatsPage() {
           <div className={`p-3 rounded-lg text-xs ${advancement.recommendedAdvance ? "bg-[var(--accent-lime)]/10 text-[var(--accent-lime)]" : "bg-white/[0.02]"}`}>
             <div className="font-semibold mb-1">
               {advancement.recommendedAdvance
-                ? `🎉 已達 Phase ${advancement.currentPhase + 1} 條件！`
-                : `仲未升 Phase ${advancement.currentPhase + 1}`}
+                ? `🎉 已達階段 ${advancement.currentPhase + 1} 條件！`
+                : `仲未升階段 ${advancement.currentPhase + 1}`}
             </div>
             <ul className="space-y-0.5">
               {advancement.reasons.map((r, i) => <li key={i}>· {r}</li>)}
@@ -143,7 +143,7 @@ function BootBars({ logs, sinceStr }: { logs: any[]; sinceStr: string }) {
         const layers = l ? [l.boot_layer_done, l.input_layer_done, l.review_layer_done, l.output_layer_done, l.debug_layer_done].filter(Boolean).length : 0;
         const h = (layers / 5) * 100;
         return (
-          <div key={d} className="flex-1 flex flex-col justify-end" title={`${d}: ${layers}/5 layers`}>
+          <div key={d} className="flex-1 flex flex-col justify-end" title={`${d}：${layers}/5 層`}>
             <div
               className={`rounded-t ${layers === 5 ? "bg-[var(--accent-lime)]" : layers >= 3 ? "bg-[var(--accent-sky)]" : layers > 0 ? "bg-[var(--accent-amber)]" : "bg-white/5"}`}
               style={{ height: `${Math.max(h, 4)}%` }}
@@ -166,7 +166,7 @@ function JournalBars({ data, sinceStr }: { data: { entry_date: string; sentence_
         const v = map.get(d) ?? 0;
         const h = (v / max) * 100;
         return (
-          <div key={d} className="flex-1 flex flex-col justify-end" title={`${d}: ${v} sentences`}>
+          <div key={d} className="flex-1 flex flex-col justify-end" title={`${d}：${v} 句`}>
             <div
               className={`rounded-t ${v > 0 ? "bg-[var(--accent-sakura)]" : "bg-white/5"}`}
               style={{ height: `${Math.max(h, 4)}%` }}

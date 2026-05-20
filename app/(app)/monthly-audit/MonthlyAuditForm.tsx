@@ -38,7 +38,7 @@ export function MonthlyAuditForm({
         planningRating: planRating,
         talkMeNaturalness: talkMeRating,
       });
-      setMsg(res.ok ? "✓ Saved" : res.error);
+      setMsg(res.ok ? "✓ 已儲存" : res.error);
       if (res.ok) {
         setTimeout(() => setMsg(null), 1500);
         router.refresh();
@@ -47,10 +47,10 @@ export function MonthlyAuditForm({
   }
 
   function advance() {
-    if (!confirm("升 Phase？此操作會 reset phase_started_at。")) return;
+    if (!confirm("升級階段？此操作會重設階段開始日期。")) return;
     startTransition(async () => {
       const res = await advancePhaseAction();
-      setMsg(res.ok ? "✓ Advanced to next phase" : res.error);
+      setMsg(res.ok ? "✓ 已升級至下一階段" : res.error);
       if (res.ok) router.refresh();
     });
   }
@@ -58,19 +58,19 @@ export function MonthlyAuditForm({
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <Textarea label="Biggest progress" value={progress} setValue={setProgress} />
-        <Textarea label="Biggest bottleneck" value={bottleneck} setValue={setBottleneck} />
-        <Textarea label="Next month focus" value={nextFocus} setValue={setNextFocus} />
+        <Textarea label="最大進步" value={progress} setValue={setProgress} />
+        <Textarea label="最大瓶頸" value={bottleneck} setValue={setBottleneck} />
+        <Textarea label="下月重點" value={nextFocus} setValue={setNextFocus} />
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <Slider label={`Planning ability: ${planRating}/10`} value={planRating} onChange={setPlanRating} />
-        <Slider label={`Talk Me naturalness: ${talkMeRating}/10`} value={talkMeRating} onChange={setTalkMeRating} />
+        <Slider label={`規劃能力：${planRating}/10`} value={planRating} onChange={setPlanRating} />
+        <Slider label={`Talk Me 自然度：${talkMeRating}/10`} value={talkMeRating} onChange={setTalkMeRating} />
       </div>
       <div className="flex items-center gap-2 flex-wrap">
-        <button onClick={save} disabled={pending} className="btn-primary text-sm">{pending ? "Saving…" : "Save audit"}</button>
+        <button onClick={save} disabled={pending} className="btn-primary text-sm">{pending ? "儲存中…" : "儲存檢討"}</button>
         {canAdvance && (
           <button onClick={advance} disabled={pending} className="btn-ghost text-sm border border-[var(--accent-lime)]/40 text-[var(--accent-lime)]">
-            🎉 Advance Phase
+            🎉 升級階段
           </button>
         )}
         {msg && <span className="text-xs text-[var(--accent-lime)]">{msg}</span>}

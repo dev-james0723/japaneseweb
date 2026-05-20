@@ -36,21 +36,21 @@ export default async function MonthlyAuditPage() {
   return (
     <div className="space-y-6">
       <GlassPanel className="p-6">
-        <h1 className="text-xl font-semibold mb-1">🌙 Monthly Audit</h1>
-        <p className="text-xs text-[var(--text-secondary)]">Month of {ms}</p>
+        <h1 className="text-xl font-semibold mb-1">🌙 每月檢討</h1>
+        <p className="text-xs text-[var(--text-secondary)]">月份：{ms}</p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
-          <Stat label="Total Vocab" value={String(cumVocab ?? 0)} accent="lime" />
-          <Stat label="Boot Rate" value={`${Math.round(bootRate * 100)}%`} accent="sky" />
-          <Stat label="Avg Journal /日" value={avgSentences.toFixed(1)} accent="sakura" />
-          <Stat label="Boot Days" value={`${bootDays}/${totalDays}`} accent="amber" />
+          <Stat label="詞彙總數" value={String(cumVocab ?? 0)} accent="lime" />
+          <Stat label="開機率" value={`${Math.round(bootRate * 100)}%`} accent="sky" />
+          <Stat label="平均日記 / 日" value={avgSentences.toFixed(1)} accent="sakura" />
+          <Stat label="開機天數" value={`${bootDays}/${totalDays}`} accent="amber" />
         </div>
       </GlassPanel>
 
       {advancement && (
         <GlassPanel className="p-5">
-          <h2 className="text-sm font-semibold mb-3">Phase Advancement</h2>
+          <h2 className="text-sm font-semibold mb-3">階段晉升</h2>
           <div className="text-xs text-[var(--text-secondary)] mb-3">
-            Currently: <span className="text-[var(--accent-lime)] font-semibold">Phase {advancement.currentPhase}</span> (Day {advancement.daysIntoPhase})
+            目前：<span className="text-[var(--accent-lime)] font-semibold">階段 {advancement.currentPhase}</span>（第 {advancement.daysIntoPhase} 日）
           </div>
           <ul className="text-xs space-y-0.5 mb-3">
             {advancement.reasons.map((r, i) => <li key={i}>· {r}</li>)}

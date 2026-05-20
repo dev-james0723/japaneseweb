@@ -21,7 +21,7 @@ export function Sidebar({ displayName }: { displayName?: string | null }) {
       <div className="px-3 mb-6">
         <div className="text-base font-semibold">日文快上手</div>
         <div className="text-[10px] tracking-[0.25em] text-[var(--text-muted)] uppercase mt-1">
-          Nihongo Quick Start
+          日文快上手
         </div>
       </div>
 

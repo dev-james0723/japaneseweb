@@ -4,6 +4,14 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { logSelfTalkAction } from "@/lib/actions/selfTalk";
 
+const CONTEXT_LABELS: Record<"morning" | "commute" | "work" | "night" | "other", string> = {
+  morning: "早晨",
+  commute: "通勤",
+  work: "工作",
+  night: "夜晚",
+  other: "其他",
+};
+
 export function SelfTalkQuickLog() {
   const [stage, setStage] = useState(1);
   const [phrase, setPhrase] = useState("");
@@ -19,7 +27,7 @@ export function SelfTalkQuickLog() {
         setMsg(res.error);
         return;
       }
-      setMsg("✓ Logged");
+      setMsg("✓ 已記錄");
       setPhrase("");
       setTimeout(() => setMsg(null), 1500);
       router.refresh();
@@ -37,7 +45,7 @@ export function SelfTalkQuickLog() {
               stage === s ? "bg-[var(--accent-lime-bg)] text-[var(--accent-lime)]" : "bg-white/5 text-[var(--text-secondary)] hover:bg-white/10"
             }`}
           >
-            Stage {s}
+            第 {s} 級
           </button>
         ))}
       </div>
@@ -55,7 +63,7 @@ export function SelfTalkQuickLog() {
             onClick={() => setCtx(c)}
             className={`text-xs px-2.5 py-1 rounded-full ${ctx === c ? "bg-[var(--accent-sakura)]/20 text-[var(--accent-sakura)]" : "bg-white/5 text-[var(--text-muted)] hover:bg-white/10"}`}
           >
-            {c}
+            {CONTEXT_LABELS[c]}
           </button>
         ))}
       </div>
@@ -65,7 +73,7 @@ export function SelfTalkQuickLog() {
           disabled={pending}
           className="btn-primary text-sm"
         >
-          {pending ? "Logging…" : "Log"}
+          {pending ? "記錄中…" : "記錄"}
         </button>
         {msg && <span className="text-xs text-[var(--accent-lime)]">{msg}</span>}
       </div>

@@ -47,18 +47,18 @@ export default async function WeeklyReviewPage() {
   return (
     <div className="space-y-6">
       <GlassPanel className="p-6">
-        <h1 className="text-xl font-semibold mb-1">🗓️ Weekly Review</h1>
-        <p className="text-xs text-[var(--text-secondary)]">Week of {wk}</p>
+        <h1 className="text-xl font-semibold mb-1">🗓️ 每週回顧</h1>
+        <p className="text-xs text-[var(--text-secondary)]">週次：{wk}</p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
-          <Stat label="New Vocab" value={String(newVocab ?? 0)} accent="lime" />
-          <Stat label="New Grammar" value={String(newGrammar ?? 0)} accent="sky" />
-          <Stat label="Boot Days" value={`${bootDays}/7`} accent="sakura" />
-          <Stat label="Anki Rate" value={ankiRate != null ? `${Math.round(ankiRate * 100)}%` : "—"} accent="amber" />
+          <Stat label="新詞彙" value={String(newVocab ?? 0)} accent="lime" />
+          <Stat label="新文法" value={String(newGrammar ?? 0)} accent="sky" />
+          <Stat label="開機天數" value={`${bootDays}/7`} accent="sakura" />
+          <Stat label="Anki 完成率" value={ankiRate != null ? `${Math.round(ankiRate * 100)}%` : "—"} accent="amber" />
         </div>
       </GlassPanel>
 
       <GlassPanel className="p-5">
-        <h2 className="text-sm font-semibold mb-3">Reflection</h2>
+        <h2 className="text-sm font-semibold mb-3">反思</h2>
         <WeeklyReviewForm
           initial={{
             userReflection: existing?.user_reflection ?? "",
@@ -71,7 +71,7 @@ export default async function WeeklyReviewPage() {
 
       {(leeches ?? []).length > 0 && (
         <GlassPanel className="p-5">
-          <h2 className="text-sm font-semibold mb-3">📌 Recent Vocab Touchpoints</h2>
+          <h2 className="text-sm font-semibold mb-3">📌 最近詞彙觸點</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {(leeches ?? []).map((v) => (
               <div key={v.id} className="p-2 rounded-lg bg-white/[0.03] text-sm">

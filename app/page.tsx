@@ -6,7 +6,7 @@ const features = [
   { icon: ImageUp, title: "圖片 OCR 匯入教材", body: "拍下課本或筆記，Gemini 抽取單字並可編輯確認。" },
   { icon: BookOpen, title: "Romaji 預設輔助閱讀", body: "所有漢字上方顯示 Romaji，可隨時關閉。" },
   { icon: Volume2, title: "Amazon Polly 日文發音", body: "每個單字與例句皆可點擊收聽，音訊快取避免重生成。" },
-  { icon: CalendarDays, title: "Spaced Repetition", body: "依正確率自動安排下一次複習，日曆檢視學習紀錄。" },
+  { icon: CalendarDays, title: "間隔重複複習", body: "依正確率自動安排下一次複習，日曆檢視學習紀錄。" },
   { icon: Network, title: "舊新詞智能連結", body: "新詞自動與你之前學過的詞建立網絡，產生混合例句。" },
 ];
 

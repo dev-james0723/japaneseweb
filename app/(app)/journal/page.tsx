@@ -41,13 +41,13 @@ export default async function JournalPage() {
       <GlassPanel className="p-6">
         <div className="flex items-end justify-between flex-wrap gap-2 mb-4">
           <div>
-            <h1 className="text-xl font-semibold">📓 日本語ジャーナル</h1>
+            <h1 className="text-xl font-semibold">📓 日記</h1>
             <p className="text-xs text-[var(--text-secondary)] mt-1">
-              Phase {phase} target: {target} sentences / day
+              階段 {phase} 目標：每日 {target} 句
             </p>
           </div>
           <div className="text-right">
-            <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">Today</div>
+            <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">今日</div>
             <div className="text-2xl font-semibold tabular-nums text-[var(--accent-lime)]">
               {todayCount} / {target}
             </div>
@@ -58,7 +58,7 @@ export default async function JournalPage() {
 
       {todayEntries && todayEntries.length > 0 && (
         <section className="space-y-3">
-          <h2 className="text-sm font-semibold px-1">今日 Entries</h2>
+          <h2 className="text-sm font-semibold px-1">今日紀錄</h2>
           {todayEntries.map((e) => (
             <EntryCard key={e.id} entry={e} />
           ))}
@@ -67,7 +67,7 @@ export default async function JournalPage() {
 
       {recent && recent.length > 0 && (
         <section className="space-y-2">
-          <h2 className="text-sm font-semibold px-1">Recent</h2>
+          <h2 className="text-sm font-semibold px-1">最近紀錄</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
             {recent.map((e) => (
               <GlassPanel key={e.id} variant="subtle" className="p-3">
@@ -107,7 +107,7 @@ function EntryCard({ entry }: { entry: EntryRow }) {
       <p className="text-sm whitespace-pre-wrap font-jp leading-relaxed mb-3">{entry.content_ja}</p>
       {entry.ai_natural_version && (
         <div className="mt-3 p-3 rounded-lg bg-[var(--accent-lime-bg)]/30 border border-[var(--accent-lime)]/20">
-          <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--accent-lime)] mb-1">✨ Natural version</div>
+          <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--accent-lime)] mb-1">✨ 自然說法</div>
           <p className="text-sm font-jp leading-relaxed">{entry.ai_natural_version}</p>
         </div>
       )}
@@ -124,7 +124,7 @@ function EntryCard({ entry }: { entry: EntryRow }) {
       )}
       {entry.notice_gap_learnings && entry.notice_gap_learnings.length > 0 && (
         <div className="mt-3">
-          <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)] mb-1">📌 Notice Gaps</div>
+          <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)] mb-1">📌 學習缺口</div>
           <ul className="text-xs text-[var(--text-secondary)] list-disc list-inside space-y-0.5">
             {entry.notice_gap_learnings.map((g, i) => <li key={i}>{g}</li>)}
           </ul>

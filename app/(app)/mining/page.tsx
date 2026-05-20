@@ -28,13 +28,13 @@ export default async function MiningPage() {
       <GlassPanel className="p-6">
         <div className="flex items-end justify-between gap-3 flex-wrap mb-2">
           <div>
-            <h1 className="text-xl font-semibold">⛏️ Sentence Mining</h1>
+            <h1 className="text-xl font-semibold">⛏️ 句子採礦</h1>
             <p className="text-xs text-[var(--text-secondary)] mt-1">
               Paste 一段日文（NHK Easy、YouTube 字幕、podcast transcript…），AI 抽 3-5 句最值得學嘅。
             </p>
           </div>
           <div className="text-right">
-            <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">Total mined</div>
+            <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">已採礦總數</div>
             <div className="text-2xl font-semibold text-[var(--accent-lime)] tabular-nums">{totalMined ?? 0}</div>
           </div>
         </div>
@@ -43,7 +43,7 @@ export default async function MiningPage() {
 
       {recent && recent.length > 0 && (
         <section className="space-y-2">
-          <h2 className="text-sm font-semibold px-1">Recent</h2>
+          <h2 className="text-sm font-semibold px-1">最近紀錄</h2>
           <div className="space-y-2">
             {recent.map((s) => (
               <GlassPanel key={s.id} variant="subtle" className="p-3">

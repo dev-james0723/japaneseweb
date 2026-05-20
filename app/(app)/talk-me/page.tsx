@@ -28,9 +28,9 @@ export default async function TalkMePage() {
   return (
     <div className="space-y-6">
       <GlassPanel className="p-6">
-        <h1 className="text-xl font-semibold mb-1">📞 Talk Me Sessions</h1>
+        <h1 className="text-xl font-semibold mb-1">📞 Talk Me 紀錄</h1>
         <p className="text-xs text-[var(--text-secondary)] mb-4">
-          Talk Me 係外部 app — 開個 lesson 完 → 返嚟撳一吓 log。記低 most useful sentence 自動可以 mine。
+          Talk Me 係外部 app — 開個課程完 → 返嚟撳一吓記錄。記低最有用的一句可自動加入句子採礦。
         </p>
         <div className="grid grid-cols-3 gap-3">
           <Stat label="2 週總分鐘" value={String(totalMins)} accent="lime" />
@@ -40,21 +40,21 @@ export default async function TalkMePage() {
       </GlassPanel>
 
       <GlassPanel className="p-5">
-        <h2 className="text-sm font-semibold mb-3">+ Log a session</h2>
+        <h2 className="text-sm font-semibold mb-3">+ 記錄時段</h2>
         <TalkMeLogger />
       </GlassPanel>
 
       {(recent ?? []).length > 0 && (
         <section className="space-y-2">
-          <h2 className="text-sm font-semibold px-1">Recent 14 days</h2>
+          <h2 className="text-sm font-semibold px-1">最近 14 日</h2>
           <div className="space-y-2">
             {(recent ?? []).map((r) => (
               <GlassPanel key={r.id} variant="subtle" className="p-3">
                 <div className="flex items-center gap-2 text-[10px] text-[var(--text-muted)]">
                   <span>{r.session_date}</span>
-                  <span>· {r.duration_minutes ?? 0} min</span>
-                  {r.shadowing_done && <span className="px-1.5 py-0.5 rounded bg-[var(--accent-lime)]/10 text-[var(--accent-lime)]">shadowing</span>}
-                  {r.conversation_mode_done && <span className="px-1.5 py-0.5 rounded bg-[var(--accent-sakura)]/10 text-[var(--accent-sakura)]">conversation</span>}
+                  <span>· {r.duration_minutes ?? 0} 分</span>
+                  {r.shadowing_done && <span className="px-1.5 py-0.5 rounded bg-[var(--accent-lime)]/10 text-[var(--accent-lime)]">跟讀</span>}
+                  {r.conversation_mode_done && <span className="px-1.5 py-0.5 rounded bg-[var(--accent-sakura)]/10 text-[var(--accent-sakura)]">對話</span>}
                 </div>
                 {r.lessons_completed?.length > 0 && (
                   <div className="text-xs text-[var(--text-secondary)] mt-1">{r.lessons_completed.join(", ")}</div>

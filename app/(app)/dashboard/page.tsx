@@ -48,21 +48,21 @@ export default async function DashboardPage() {
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
           <div>
             <p className="text-[10px] tracking-[0.3em] text-[var(--text-muted)] uppercase mb-2">
-              🌸 Japanese OS · {new Date().toLocaleDateString("zh-Hant-TW", { weekday: "long", month: "long", day: "numeric" })}
+              🌸 日文學習系統 · {new Date().toLocaleDateString("zh-Hant-TW", { weekday: "long", month: "long", day: "numeric" })}
             </p>
             <h1 className="text-2xl md:text-3xl font-semibold mb-1">
-              Phase {phase}: {phaseInfo.name}
+              階段 {phase}：{phaseInfo.name}
             </h1>
             <p className="text-sm text-[var(--text-secondary)]">
-              {phaseInfo.months} · Day {daysIntoPhase} · Target {osSettings?.target_jlpt ?? "N2"}
+              {phaseInfo.months} · 第 {daysIntoPhase} 日 · 目標 {osSettings?.target_jlpt ?? "N2"}
             </p>
             <p className="text-xs text-[var(--text-muted)] mt-2">{phaseInfo.goal}</p>
           </div>
           <div className="flex flex-col items-start md:items-end gap-2">
-            <div className="text-[10px] tracking-[0.2em] text-[var(--text-muted)] uppercase">Today&rsquo;s Boot</div>
+            <div className="text-[10px] tracking-[0.2em] text-[var(--text-muted)] uppercase">今日開機</div>
             <div className="text-3xl font-semibold tabular-nums text-[var(--accent-lime)]">{completion}%</div>
             <div className="text-xs text-[var(--text-muted)]">
-              {MODE_INFO[mode].label} mode · {MODE_INFO[mode].minutes} min · Streak {streak} 日
+              {MODE_INFO[mode].label} 模式 · {MODE_INFO[mode].minutes} 分鐘 · 連續 {streak} 日
             </div>
           </div>
         </div>
@@ -95,34 +95,34 @@ export default async function DashboardPage() {
 
       <GlassPanel className="p-5 md:p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold">📊 This Week (since {weekly.weekStart})</h2>
+          <h2 className="text-sm font-semibold">📊 本週（自 {weekly.weekStart}）</h2>
           <Link href="/stats" className="text-xs text-[var(--text-muted)] hover:text-white">查看詳細 →</Link>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <WeekStat label="Boot Days" value={`${weekly.bootDays}/7`} accent="lime" />
+          <WeekStat label="開機天數" value={`${weekly.bootDays}/7`} accent="lime" />
           <WeekStat
-            label="New Vocab"
+            label="新詞彙"
             value={`${weekly.newVocab}/${osSettings?.weekly_new_vocab_quota ?? 20}`}
             accent={weekly.newVocab > (osSettings?.weekly_new_vocab_quota ?? 20) ? "amber" : "sky"}
           />
           <WeekStat
-            label="Anki Rate"
+            label="Anki 完成率"
             value={weekly.ankiRate != null ? `${Math.round(weekly.ankiRate * 100)}%` : "—"}
             accent="sakura"
           />
-          <WeekStat label="Due Now" value={String(weekly.dueCount)} accent="amber" />
+          <WeekStat label="待複習" value={String(weekly.dueCount)} accent="amber" />
         </div>
       </GlassPanel>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <QuickLink href="/journal" emoji="📓" label="Journal" />
-        <QuickLink href="/mining" emoji="⛏️" label="Sentence Mining" />
+        <QuickLink href="/journal" emoji="📓" label="日記" />
+        <QuickLink href="/mining" emoji="⛏️" label="句子採礦" />
         <QuickLink href="/talk-me" emoji="📞" label="Talk Me" />
-        <QuickLink href="/roleplay" emoji="🎭" label="Roleplay" />
-        <QuickLink href="/grammar" emoji="📖" label="Grammar" />
-        <QuickLink href="/weekly-review" emoji="🗓️" label="Weekly Review" />
-        <QuickLink href="/monthly-audit" emoji="🌙" label="Monthly Audit" />
-        <QuickLink href="/decks" emoji="🃏" label="Vocab Decks" />
+        <QuickLink href="/roleplay" emoji="🎭" label="角色扮演" />
+        <QuickLink href="/grammar" emoji="📖" label="文法" />
+        <QuickLink href="/weekly-review" emoji="🗓️" label="每週回顧" />
+        <QuickLink href="/monthly-audit" emoji="🌙" label="每月檢討" />
+        <QuickLink href="/decks" emoji="🃏" label="詞庫" />
       </div>
     </div>
   );

@@ -55,7 +55,7 @@ export function JournalEditor() {
           disabled={pending || !content.trim()}
           className="btn-primary text-sm"
         >
-          {pending ? "處理中…" : "AI Check + 儲存"}
+          {pending ? "處理中…" : "AI 檢查 + 儲存"}
         </button>
         <button
           type="button"
@@ -72,7 +72,7 @@ export function JournalEditor() {
       {feedback?.noticeGaps && feedback.noticeGaps.length > 0 && (
         <div className="p-3 rounded-lg bg-white/[0.04] border border-white/10">
           <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)] mb-2">
-            📌 Add Notice Gaps to Notebook
+            📌 將學習缺口加入筆記本
           </div>
           <div className="flex flex-wrap gap-1.5">
             {feedback.noticeGaps.map((g, i) => (

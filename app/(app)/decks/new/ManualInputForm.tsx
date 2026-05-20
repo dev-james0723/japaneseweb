@@ -53,7 +53,7 @@ export function ManualInputForm() {
           className="glass-input w-full font-jp leading-relaxed"
         />
         <p className="text-[11px] text-[var(--text-muted)] mt-1.5">
-          可以只貼單字，也可以用「日文｜中文」格式。Romaji 與其他欄位會在後續 Phase 5 由 AI 補上。
+          可以只貼單字，也可以用「日文｜中文」格式。Romaji 與其他欄位會在後續階段 5 由 AI 補上。
         </p>
       </div>
 

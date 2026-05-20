@@ -20,10 +20,10 @@ type Message =
 
 const PRESETS = [
   { label: "Café 點餐", scenario: "你喺東京嘅一間 café 想點咖啡同蛋糕。", partner: "店員" },
-  { label: "Convenience store", scenario: "你喺 7-11 結帳，店員會問你要唔要袋／加熱／用 IC card。", partner: "店員" },
+  { label: "便利店結帳", scenario: "你喺 7-11 結帳，店員會問你要唔要袋／加熱／用 IC 卡。", partner: "店員" },
   { label: "問路", scenario: "你喺新宿問路去歌舞伎町。", partner: "路人" },
-  { label: "Hotel check-in", scenario: "你 check-in 一間 ryokan，要交護照、確認晚餐時間。", partner: "前台" },
-  { label: "同事 small talk", scenario: "你係新人，午飯時同同事閒聊。", partner: "同事" },
+  { label: "酒店入住", scenario: "你入住一間旅館，要交護照、確認晚餐時間。", partner: "前台" },
+  { label: "同事閒聊", scenario: "你係新人，午飯時同同事閒聊。", partner: "同事" },
 ];
 
 export function RoleplayClient({ defaultDifficulty }: { defaultDifficulty: Difficulty }) {
@@ -68,7 +68,7 @@ export function RoleplayClient({ defaultDifficulty }: { defaultDifficulty: Diffi
       const data: AssistantReply = await res.json();
       setMessages([...next, { role: "assistant", content: data.reply_ja, data }]);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Unknown error");
+      setError(e instanceof Error ? e.message : "未知錯誤");
     } finally {
       setPending(false);
     }
@@ -100,14 +100,14 @@ export function RoleplayClient({ defaultDifficulty }: { defaultDifficulty: Diffi
             value={scenario}
             onChange={(e) => setScenario(e.target.value)}
             className="md:col-span-2 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs"
-            placeholder="Scenario"
+            placeholder="場景描述"
           />
           <div className="flex gap-2">
             <input
               value={partnerRole}
               onChange={(e) => setPartnerRole(e.target.value)}
               className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs"
-              placeholder="Partner role"
+              placeholder="對手角色"
             />
             <select
               value={difficulty}
@@ -168,7 +168,7 @@ export function RoleplayClient({ defaultDifficulty }: { defaultDifficulty: Diffi
             className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm font-jp focus:border-[var(--accent-lime)] focus:outline-none"
           />
           <button onClick={send} disabled={pending || !input.trim()} className="btn-primary text-sm">
-            Send
+            送出
           </button>
         </div>
         {error && <div className="mt-2 text-xs text-red-400">{error}</div>}
