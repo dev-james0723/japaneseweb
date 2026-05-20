@@ -1,5 +1,11 @@
 {
   "regions": ["hnd1"],
+  "crons": [
+    {
+      "path": "/api/cron/daily-cultural-pick",
+      "schedule": "0 0 * * *"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
