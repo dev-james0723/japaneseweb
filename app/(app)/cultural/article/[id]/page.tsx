@@ -20,9 +20,16 @@ import { FuriganaText } from "@/components/FuriganaText";
 import { JapaneseSentence } from "@/components/JapaneseSentence";
 import { KanaKanjiBridge } from "@/components/KanaKanjiBridge";
 import { QuickSaveButton } from "@/components/QuickSaveButton";
+import { CulturalArticleMotionPanel } from "@/components/CulturalArticleMotionPanel";
 import type { GeneratedCulturalArticle } from "@/lib/cultural/schemas";
 import { stripInlineKanaReadings } from "@/lib/furigana";
 import { cleanAiTextBlock } from "@/lib/text/cleanAiText";
+import { buildCulturalArticleRecapProps } from "@/lib/motion/culturalArticleMotion";
+import {
+  culturalContentRowToGeneratedArticle,
+  fetchLatestCulturalArticleMotionJob,
+} from "@/lib/motion/culturalArticleMotionJobs";
+import { buildFallbackArticleMotionManifest } from "@/lib/motion/culturalArticleMotionManifest";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -108,6 +115,27 @@ export default async function CulturalArticlePage({
     channels: (channels.data ?? []) as Channel[],
     podcasts: (podcasts.data ?? []) as Podcast[],
   });
+  const articleForMotion = culturalContentRowToGeneratedArticle(row);
+  const motionJob = await fetchLatestCulturalArticleMotionJob(supabase, {
+    userId: session.user.id,
+    articleId: id,
+    article: articleForMotion,
+    category: row.category,
+  });
+  const motionManifest =
+    motionJob?.manifest ??
+    buildFallbackArticleMotionManifest({
+      articleId: id,
+      article: articleForMotion,
+      category: row.category,
+    });
+  const motionProps = buildCulturalArticleRecapProps({
+    titleJa,
+    titleZh,
+    summaryZh,
+    vocab: keyVocab.map((vocab) => vocab.word).filter(Boolean).slice(0, 4),
+    manifest: motionManifest,
+  });
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -192,6 +220,12 @@ export default async function CulturalArticlePage({
               <p>Highlight 任意字詞，即刻 save / inspect。</p>
             </div>
           </GlassPanel>
+
+          <CulturalArticleMotionPanel
+            articleId={id}
+            job={motionJob}
+            {...motionProps}
+          />
 
           {cantoneseLens ? (
             <GlassPanel className="overflow-hidden p-0">

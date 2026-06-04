@@ -16,6 +16,7 @@ import {
   BookMarked,
   BarChart3,
   CalendarClock,
+  Clapperboard,
   Moon,
   Flower2,
 } from "lucide-react";
@@ -29,6 +30,7 @@ export const APP_NAV: AppNavItem[] = [
   { href: "/grammar", label: "文法", icon: BookMarked },
   { href: "/journal", label: "日記", icon: Pencil },
   { href: "/cultural", label: "文化沉浸", icon: Flower2 },
+  { href: "/motion", label: "素材動畫", icon: Clapperboard },
   { href: "/mining", label: "句子採礦", icon: Pickaxe },
   { href: "/talk-me", label: "Talk Me 紀錄", icon: PhoneCall },
   { href: "/roleplay", label: "角色扮演", icon: Theater },
@@ -61,6 +63,7 @@ export const APP_NAV_GROUPS: AppNavGroup[] = [
       "/grammar",
       "/journal",
       "/cultural",
+      "/motion",
       "/mining",
       "/talk-me",
       "/roleplay",

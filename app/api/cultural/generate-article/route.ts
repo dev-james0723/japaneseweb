@@ -18,6 +18,7 @@ import {
   GenerateArticleRequestSchema,
   type GeneratedCulturalArticle,
 } from "@/lib/cultural/schemas";
+import { createCulturalArticleMotionJob } from "@/lib/motion/culturalArticleMotionJobs";
 import { todayDateString } from "@/lib/os/types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { postgrestUserMessage } from "@/lib/supabase/postgrestUserMessage";
@@ -107,6 +108,9 @@ export async function POST(req: Request) {
   });
 
   let contentId: string | null = null;
+  let motionJob:
+    | { id: string; status: string; handoff_url: string }
+    | null = null;
   if (save) {
     try {
       const today = todayDateString();
@@ -123,6 +127,19 @@ export async function POST(req: Request) {
         cantoneseLensImagePrompt: cantoneseLensImage?.prompt ?? null,
       });
       contentId = id;
+      const job = await createCulturalArticleMotionJob(supabase, {
+        userId: user.id,
+        articleId: id,
+        article,
+        category,
+      });
+      if (job) {
+        motionJob = {
+          id: job.id,
+          status: job.status,
+          handoff_url: job.outputs.handoffUrl,
+        };
+      }
       if (as_daily_pick) {
         await supabase
           .from("cultural_preferences")
@@ -158,6 +175,7 @@ export async function POST(req: Request) {
     thumbnail_url: thumbnailUrl,
     cantonese_lens_image: cantoneseLensImage,
     content_id: contentId,
+    motion_job: motionJob,
   });
 }
 

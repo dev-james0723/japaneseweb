@@ -21,6 +21,7 @@ import { stripInlineKanaReadings } from "@/lib/furigana";
 import { cleanAiTextBlock } from "@/lib/text/cleanAiText";
 import { generateCulturalArticleThumbnail } from "@/lib/cultural/generateThumbnail";
 import { generateCantoneseLensIllustration } from "@/lib/cultural/generateSectionImage";
+import { createCulturalArticleMotionJob } from "@/lib/motion/culturalArticleMotionJobs";
 
 export type CulturalUserContext = {
   userId: string;
@@ -354,6 +355,13 @@ export async function runDailyCulturalPickForUser(
     thumbnailUrl,
     cantoneseLensImageUrl: cantoneseLensImage?.imageUrl ?? null,
     cantoneseLensImagePrompt: cantoneseLensImage?.prompt ?? null,
+  });
+
+  await createCulturalArticleMotionJob(supabase, {
+    userId,
+    articleId: id,
+    article,
+    category,
   });
 
   await supabase

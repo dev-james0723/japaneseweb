@@ -1,5 +1,19 @@
 <!doctype html>
-<html lang="zh-Hant" data-resolution="landscape">
+<html
+  lang="zh-Hant"
+  data-resolution="landscape"
+  data-composition-variables='[
+    {"id":"title","type":"string","label":"Title","default":"日本文化沉浸"},
+    {"id":"subtitle","type":"string","label":"Subtitle","default":"一篇文章，幾個可帶走的日文觀察。"},
+    {"id":"summary","type":"string","label":"Summary","default":"讀一段文化故事，把漢字、假名、語感與香港視角連起來。"},
+    {"id":"vocab","type":"string","label":"Vocabulary","default":"文化,語感,季節,記憶"},
+    {"id":"keywords","type":"string","label":"Specificity keywords","default":"文化,語感,季節,記憶"},
+    {"id":"scene_headline","type":"string","label":"Scene headline","default":"文化觀察"},
+    {"id":"scene_text","type":"string","label":"Scene text","default":"這段影片會改用文章本身的文化細節。"},
+    {"id":"evidence","type":"string","label":"Article evidence","default":"Render handoff 會帶入 article_evidence，避免 generic 日本素材。"},
+    {"id":"visual_prompt","type":"string","label":"Visual prompt","default":"Premium article-specific cultural explainer visual."}
+  ]'
+>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=1920, height=1080" />
@@ -18,21 +32,30 @@
         overflow: hidden;
         background: #080705;
         color: #fff;
-        font-family:
-          ui-sans-serif,
-          system-ui,
-          sans-serif;
+        font-family: ui-sans-serif, system-ui, sans-serif;
       }
 
       .scene {
         position: relative;
         width: 100%;
         height: 100%;
-        padding: 92px;
+        overflow: hidden;
         background:
-          radial-gradient(circle at 14% 10%, rgba(215, 239, 105, 0.22), transparent 31%),
-          radial-gradient(circle at 86% 82%, rgba(145, 213, 232, 0.18), transparent 34%),
+          linear-gradient(135deg, rgba(215, 239, 105, 0.16), transparent 28%),
+          linear-gradient(315deg, rgba(145, 213, 232, 0.14), transparent 30%),
           linear-gradient(145deg, #1b1712 0%, #0d0b09 52%, #030302 100%);
+      }
+
+      .scene::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: repeating-linear-gradient(
+          105deg,
+          rgba(255, 255, 255, 0.045) 0 1px,
+          transparent 1px 132px
+        );
+        opacity: 0.24;
       }
 
       .frame {
@@ -41,57 +64,182 @@
         border: 1px solid rgba(255, 255, 255, 0.16);
         border-radius: 42px;
         background: rgba(255, 255, 255, 0.055);
-        box-shadow: 0 40px 130px rgba(0, 0, 0, 0.48);
+        box-shadow: 0 0 120px rgba(215, 239, 105, 0.2);
+      }
+
+      .rail {
+        position: absolute;
+        top: 86px;
+        left: 132px;
+        right: 132px;
+        height: 5px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .rail-fill {
+        width: 100%;
+        height: 100%;
+        transform: scaleX(0);
+        transform-origin: left center;
+        background: linear-gradient(90deg, #d7ef69, #91d5e8, #f3a9c8);
+      }
+
+      .panel {
+        position: absolute;
+        inset: 145px 145px 122px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 28px;
+        opacity: 0;
       }
 
       .label {
         color: #d7ef69;
-        font-size: 28px;
-        font-weight: 800;
-        letter-spacing: 0.18em;
+        font-size: 30px;
+        font-weight: 850;
+        letter-spacing: 0.2em;
         text-transform: uppercase;
       }
 
       .title {
-        max-width: 1180px;
-        margin-top: 34px;
-        font-size: 86px;
-        font-weight: 850;
-        line-height: 1.06;
+        max-width: 1220px;
+        font-size: var(--title-size, 86px);
+        font-weight: 880;
+        line-height: 1.05;
       }
 
       .subtitle {
-        margin-top: 30px;
+        max-width: 1050px;
         color: rgba(255, 255, 255, 0.78);
-        font-size: 38px;
+        font-size: 42px;
+        line-height: 1.24;
       }
 
       .summary {
-        position: absolute;
-        left: 120px;
-        bottom: 130px;
-        width: 880px;
-        color: rgba(255, 255, 255, 0.76);
+        max-width: 1120px;
+        color: rgba(255, 255, 255, 0.66);
         font-size: 30px;
-        line-height: 1.55;
+        line-height: 1.45;
       }
 
-      .vocab {
-        position: absolute;
-        right: 122px;
-        bottom: 120px;
+      .keyword-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        max-width: 1160px;
+      }
+
+      .keyword {
+        border: 1px solid rgba(215, 239, 105, 0.38);
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.24);
+        padding: 12px 20px;
+        color: #d7ef69;
+        font-size: 25px;
+        font-weight: 800;
+      }
+
+      .evidence-card {
         display: grid;
-        width: 540px;
-        gap: 18px;
+        grid-template-columns: 14px minmax(0, 1fr) minmax(0, 0.82fr);
+        gap: 36px;
+        align-items: stretch;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 34px;
+        background: rgba(0, 0, 0, 0.26);
+        padding: 44px;
+      }
+
+      .accent {
+        width: 14px;
+        border-radius: 999px;
+        background: linear-gradient(180deg, #d7ef69, #91d5e8, #f3a9c8);
+      }
+
+      .scene-headline {
+        color: #91d5e8;
+        font-size: 58px;
+        font-weight: 880;
+        line-height: 1.05;
+      }
+
+      .scene-text {
+        margin-top: 26px;
+        color: rgba(255, 255, 255, 0.84);
+        font-size: 42px;
+        font-weight: 680;
+        line-height: 1.3;
+      }
+
+      .evidence-block {
+        border-left: 1px solid rgba(255, 255, 255, 0.12);
+        padding-left: 34px;
+      }
+
+      .evidence-label {
+        color: #f3a9c8;
+        font-size: 20px;
+        font-weight: 850;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+
+      .evidence {
+        margin-top: 22px;
+        color: rgba(255, 255, 255, 0.62);
+        font-size: 29px;
+        line-height: 1.45;
+      }
+
+      .language-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 0.78fr) minmax(0, 1fr);
+        gap: 36px;
+        align-items: stretch;
+      }
+
+      .word-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
       }
 
       .chip {
+        min-height: 132px;
+        display: flex;
+        align-items: center;
         border: 1px solid rgba(255, 255, 255, 0.16);
-        border-radius: 22px;
+        border-radius: 26px;
         background: rgba(0, 0, 0, 0.25);
-        padding: 19px 24px;
-        font-size: 32px;
-        font-weight: 760;
+        padding: 22px 26px;
+        font-size: 40px;
+        font-weight: 850;
+        line-height: 1.1;
+        box-shadow: inset 7px 0 0 var(--chip-accent, #d7ef69);
+      }
+
+      .language-card {
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 30px;
+        background: rgba(255, 255, 255, 0.055);
+        padding: 42px;
+      }
+
+      .language-title {
+        color: #f3a9c8;
+        font-size: 50px;
+        font-weight: 880;
+        line-height: 1.08;
+      }
+
+      .language-text {
+        margin-top: 26px;
+        color: rgba(255, 255, 255, 0.76);
+        font-size: 36px;
+        line-height: 1.38;
       }
     </style>
   </head>
@@ -104,48 +252,128 @@
       data-width="1920"
       data-height="1080"
     >
-      <section class="scene">
+      <section id="scene-1" class="scene clip" data-start="0" data-duration="8" data-track-index="0">
         <div class="frame"></div>
-        <div class="copy">
-          <div class="label">Cultural Recap</div>
+        <div class="rail"><div class="rail-fill"></div></div>
+
+        <div class="panel intro-panel">
+          <div class="label">Article Recap</div>
           <h1 class="title" data-field="title">日本文化沉浸</h1>
           <p class="subtitle" data-field="subtitle">一篇文章，幾個可帶走的日文觀察。</p>
+          <p class="summary" data-field="summary">讀一段文化故事，把漢字、假名、語感與香港視角連起來。</p>
+          <div class="keyword-row">
+            <span class="keyword" data-keyword="0">文化</span>
+            <span class="keyword" data-keyword="1">語感</span>
+            <span class="keyword" data-keyword="2">季節</span>
+            <span class="keyword" data-keyword="3">記憶</span>
+          </div>
         </div>
-        <p class="summary" data-field="summary">
-          讀一段文化故事，把漢字、假名、語感與香港視角連起來。
-        </p>
-        <div class="vocab">
-          <div class="chip" data-word="0">文化</div>
-          <div class="chip" data-word="1">語感</div>
-          <div class="chip" data-word="2">季節</div>
-          <div class="chip" data-word="3">記憶</div>
+
+        <div class="panel evidence-panel">
+          <div class="label">Culture Detail</div>
+          <div class="evidence-card">
+            <div class="accent"></div>
+            <div>
+              <h2 class="scene-headline" data-field="scene_headline">文化觀察</h2>
+              <p class="scene-text" data-field="scene_text">這段影片會改用文章本身的文化細節。</p>
+            </div>
+            <div class="evidence-block">
+              <div class="evidence-label">Article evidence</div>
+              <p class="evidence" data-field="evidence">Render handoff 會帶入 article_evidence，避免 generic 日本素材。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel language-panel">
+          <div class="label">Language Hooks</div>
+          <div class="language-grid">
+            <div class="word-grid">
+              <div class="chip" data-word="0" style="--chip-accent: #d7ef69">文化</div>
+              <div class="chip" data-word="1" style="--chip-accent: #91d5e8">語感</div>
+              <div class="chip" data-word="2" style="--chip-accent: #f3a9c8">季節</div>
+              <div class="chip" data-word="3" style="--chip-accent: #efbd63">記憶</div>
+            </div>
+            <div class="language-card">
+              <h2 class="language-title" data-field="language_title">語言抓手</h2>
+              <p class="language-text" data-field="language_text">文章內的關鍵詞會變成可跟讀的 motion chips。</p>
+            </div>
+          </div>
         </div>
       </section>
     </div>
 
     <script>
       const vars = window.__hyperframes?.getVariables?.() || {};
-      document.querySelector('[data-field="title"]').textContent =
-        vars.title || "日本文化沉浸";
-      document.querySelector('[data-field="subtitle"]').textContent =
-        vars.subtitle || "一篇文章，幾個可帶走的日文觀察。";
-      document.querySelector('[data-field="summary"]').textContent =
-        vars.summary || "讀一段文化故事，把漢字、假名、語感與香港視角連起來。";
-      const words = Array.isArray(vars.vocab) ? vars.vocab : ["文化", "語感", "季節", "記憶"];
-      document.querySelectorAll("[data-word]").forEach((node, index) => {
-        node.textContent = words[index] || words[0] || "日文";
+      const title = trim(vars.title || "日本文化沉浸", 48);
+      const subtitle = trim(vars.subtitle || "一篇文章，幾個可帶走的日文觀察。", 70);
+      const summary = trim(vars.summary || "讀一段文化故事，把漢字、假名、語感與香港視角連起來。", 105);
+      const headline = trim(vars.scene_headline || "文化觀察", 30);
+      const sceneText = trim(vars.scene_text || "這段影片會改用文章本身的文化細節。", 110);
+      const evidence = trim(vars.evidence || "Render handoff 會帶入 article_evidence，避免 generic 日本素材。", 150);
+
+      document.querySelector('[data-field="title"]').textContent = title;
+      document.querySelector('[data-field="subtitle"]').textContent = subtitle;
+      document.querySelector('[data-field="summary"]').textContent = summary;
+      document.querySelector('[data-field="scene_headline"]').textContent = headline;
+      document.querySelector('[data-field="scene_text"]').textContent = sceneText;
+      document.querySelector('[data-field="evidence"]').textContent = evidence;
+      document.querySelector('[data-field="language_title"]').textContent = headline;
+      document.querySelector('[data-field="language_text"]').textContent = sceneText;
+      document.documentElement.style.setProperty(
+        "--title-size",
+        title.length > 34 ? "64px" : title.length > 22 ? "74px" : "86px",
+      );
+
+      const words = parseList(vars.keywords || vars.vocab || "文化,語感,季節,記憶");
+      document.querySelectorAll("[data-word], [data-keyword]").forEach((node, index) => {
+        node.textContent = trim(words[index] || words[0] || "日文", 16);
       });
 
       window.__timelines = window.__timelines || {};
       const tl = gsap.timeline({ paused: true });
-      tl.from(".frame", { autoAlpha: 0, scale: 0.98, duration: 0.8, ease: "power2.out" }, 0)
-        .from(".label", { autoAlpha: 0, y: 18, duration: 0.42, ease: "power2.out" }, 0.12)
-        .from(".title", { autoAlpha: 0, y: 34, duration: 0.72, ease: "power3.out" }, 0.2)
-        .from(".subtitle", { autoAlpha: 0, y: 22, duration: 0.54, ease: "power2.out" }, 0.45)
-        .from(".summary", { autoAlpha: 0, y: 20, duration: 0.6, ease: "power2.out" }, 1.05)
-        .from(".chip", { autoAlpha: 0, x: 38, stagger: 0.12, duration: 0.5, ease: "power2.out" }, 1.24)
-        .to(".frame", { boxShadow: "0 0 120px rgba(215,239,105,0.22)", duration: 2.4, ease: "sine.inOut" }, 2.2);
+      tl.set(".panel", { autoAlpha: 0 })
+        .set(".intro-panel", { autoAlpha: 1 })
+        .from(".frame", { autoAlpha: 0, scale: 0.985, duration: 0.55, ease: "power2.out" }, 0)
+        .to(".rail-fill", { scaleX: 1, duration: 8, ease: "none" }, 0)
+        .from(".label, .title, .subtitle, .summary, .keyword", {
+          autoAlpha: 0,
+          y: 28,
+          duration: 0.58,
+          stagger: 0.07,
+          ease: "power2.out",
+        }, 0.15)
+        .to(".intro-panel", { autoAlpha: 0, y: -22, duration: 0.36, ease: "power2.in" }, 2.45)
+        .fromTo(".evidence-panel", { autoAlpha: 0, y: 28 }, { autoAlpha: 1, y: 0, duration: 0.56, ease: "power2.out" }, 2.72)
+        .from(".accent, .scene-headline, .scene-text, .evidence-block", {
+          autoAlpha: 0,
+          x: 24,
+          duration: 0.48,
+          stagger: 0.08,
+          ease: "power2.out",
+        }, 2.9)
+        .to(".evidence-panel", { autoAlpha: 0, y: -22, duration: 0.36, ease: "power2.in" }, 5.12)
+        .fromTo(".language-panel", { autoAlpha: 0, y: 28 }, { autoAlpha: 1, y: 0, duration: 0.56, ease: "power2.out" }, 5.38)
+        .from(".chip, .language-card", {
+          autoAlpha: 0,
+          y: 24,
+          duration: 0.44,
+          stagger: 0.07,
+          ease: "power2.out",
+        }, 5.58);
       window.__timelines.main = tl;
+
+      function parseList(value) {
+        return String(value)
+          .split(/[,\n、]/)
+          .map((word) => word.trim())
+          .filter(Boolean)
+          .slice(0, 4);
+      }
+
+      function trim(value, max) {
+        const text = String(value || "").replace(/\s+/g, " ").trim();
+        return text.length <= max ? text : text.slice(0, max - 1) + "…";
+      }
     </script>
   </body>
 </html>

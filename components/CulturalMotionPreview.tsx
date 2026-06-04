@@ -1,10 +1,11 @@
 "use client";
 
 import { Player } from "@remotion/player";
+import { CulturalArticleRecap } from "@/components/remotion/CulturalArticleRecap";
 import {
-  CulturalArticleRecap,
+  CULTURAL_ARTICLE_RECAP_COMPOSITION,
   type CulturalArticleRecapProps,
-} from "@/components/remotion/CulturalArticleRecap";
+} from "@/lib/motion/culturalArticleRecapConfig";
 
 export function CulturalMotionPreview(props: CulturalArticleRecapProps) {
   return (
@@ -12,10 +13,10 @@ export function CulturalMotionPreview(props: CulturalArticleRecapProps) {
       <Player
         component={CulturalArticleRecap}
         inputProps={props}
-        durationInFrames={140}
-        compositionWidth={1280}
-        compositionHeight={720}
-        fps={30}
+        durationInFrames={CULTURAL_ARTICLE_RECAP_COMPOSITION.durationInFrames}
+        compositionWidth={CULTURAL_ARTICLE_RECAP_COMPOSITION.width}
+        compositionHeight={CULTURAL_ARTICLE_RECAP_COMPOSITION.height}
+        fps={CULTURAL_ARTICLE_RECAP_COMPOSITION.fps}
         controls
         clickToPlay
         loop

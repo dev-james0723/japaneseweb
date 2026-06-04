@@ -223,6 +223,62 @@ export type Database = {
           },
         ]
       }
+      cultural_article_motion_jobs: {
+        Row: {
+          article_id: string
+          completed_at: string | null
+          created_at: string
+          engine: string
+          error_message: string | null
+          id: string
+          motion_manifest: Json
+          outputs: Json
+          render_requested_at: string | null
+          started_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          article_id: string
+          completed_at?: string | null
+          created_at?: string
+          engine?: string
+          error_message?: string | null
+          id?: string
+          motion_manifest?: Json
+          outputs?: Json
+          render_requested_at?: string | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          article_id?: string
+          completed_at?: string | null
+          created_at?: string
+          engine?: string
+          error_message?: string | null
+          id?: string
+          motion_manifest?: Json
+          outputs?: Json
+          render_requested_at?: string | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cultural_article_motion_jobs_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "cultural_contents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cultural_preferences: {
         Row: {
           avoided_categories: string[]
