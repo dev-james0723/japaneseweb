@@ -65,6 +65,8 @@ export type Database = {
           body_ja: string | null
           body_paragraphs: Json | null
           body_zh: string | null
+          cantonese_lens_image_prompt: string | null
+          cantonese_lens_image_url: string | null
           cantonese_lens: string | null
           category: string
           content_type: string
@@ -96,6 +98,8 @@ export type Database = {
           body_ja?: string | null
           body_paragraphs?: Json | null
           body_zh?: string | null
+          cantonese_lens_image_prompt?: string | null
+          cantonese_lens_image_url?: string | null
           cantonese_lens?: string | null
           category: string
           content_type: string
@@ -127,6 +131,8 @@ export type Database = {
           body_ja?: string | null
           body_paragraphs?: Json | null
           body_zh?: string | null
+          cantonese_lens_image_prompt?: string | null
+          cantonese_lens_image_url?: string | null
           cantonese_lens?: string | null
           category?: string
           content_type?: string

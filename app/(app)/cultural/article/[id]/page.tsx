@@ -86,6 +86,7 @@ export default async function CulturalArticlePage({
   const summaryZh = cleanAiTextBlock(row.ai_summary_zh);
   const culturalNotes = cleanAiTextBlock(row.cultural_notes);
   const cantoneseLens = cleanAiTextBlock(row.cantonese_lens);
+  const cantoneseLensImageUrl = row.cantonese_lens_image_url?.trim() || null;
   const paragraphs = ((row.body_paragraphs as Paragraph[] | null) ?? []).map((paragraph) => ({
     ...paragraph,
     ja: stripInlineKanaReadings(paragraph.ja),
@@ -193,14 +194,24 @@ export default async function CulturalArticlePage({
           </GlassPanel>
 
           {cantoneseLens ? (
-            <GlassPanel className="p-5">
-              <div className="mb-3 flex items-center gap-2">
-                <Quote className="h-4 w-4 text-[var(--accent-lime)]" aria-hidden="true" />
-                <h2 className="text-sm font-semibold">香港視角</h2>
+            <GlassPanel className="overflow-hidden p-0">
+              {cantoneseLensImageUrl ? (
+                <div
+                  className="aspect-[4/5] border-b border-white/10 bg-cover bg-center"
+                  style={{ backgroundImage: `url(${cantoneseLensImageUrl})` }}
+                  role="img"
+                  aria-label={`${titleZh} 的香港視角插畫`}
+                />
+              ) : null}
+              <div className="p-5">
+                <div className="mb-3 flex items-center gap-2">
+                  <Quote className="h-4 w-4 text-[var(--accent-lime)]" aria-hidden="true" />
+                  <h2 className="text-sm font-semibold">香港視角</h2>
+                </div>
+                <p className="whitespace-pre-wrap text-sm leading-7 text-[var(--text-secondary)]">
+                  {cantoneseLens}
+                </p>
               </div>
-              <p className="whitespace-pre-wrap text-sm leading-7 text-[var(--text-secondary)]">
-                {cantoneseLens}
-              </p>
             </GlassPanel>
           ) : null}
         </aside>

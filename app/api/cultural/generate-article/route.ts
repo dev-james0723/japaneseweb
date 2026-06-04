@@ -13,13 +13,17 @@ import {
   suggestCulturalTopic,
 } from "@/lib/cultural/generateArticle";
 import { generateCulturalArticleThumbnail } from "@/lib/cultural/generateThumbnail";
-import { GenerateArticleRequestSchema } from "@/lib/cultural/schemas";
+import { generateCantoneseLensIllustration } from "@/lib/cultural/generateSectionImage";
+import {
+  GenerateArticleRequestSchema,
+  type GeneratedCulturalArticle,
+} from "@/lib/cultural/schemas";
 import { todayDateString } from "@/lib/os/types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { postgrestUserMessage } from "@/lib/supabase/postgrestUserMessage";
 
 export const runtime = "nodejs";
-export const maxDuration = 120;
+export const maxDuration = 180;
 
 export async function POST(req: Request) {
   const supabase = await createSupabaseServerClient();
@@ -67,7 +71,7 @@ export async function POST(req: Request) {
     category,
   });
 
-  let article;
+  let article: GeneratedCulturalArticle;
   let thumbnailUrl: string | null = null;
   try {
     [article, thumbnailUrl] = await Promise.all([
@@ -96,6 +100,12 @@ export async function POST(req: Request) {
     );
   }
 
+  const cantoneseLensImage = await generateCantoneseLensIllustration({
+    userId: user.id,
+    article,
+    category,
+  });
+
   let contentId: string | null = null;
   if (save) {
     try {
@@ -109,6 +119,8 @@ export async function POST(req: Request) {
         isDailyPick: as_daily_pick,
         dailyPickDate: as_daily_pick ? today : undefined,
         thumbnailUrl,
+        cantoneseLensImageUrl: cantoneseLensImage?.imageUrl ?? null,
+        cantoneseLensImagePrompt: cantoneseLensImage?.prompt ?? null,
       });
       contentId = id;
       if (as_daily_pick) {
@@ -144,6 +156,7 @@ export async function POST(req: Request) {
     topic: resolvedTopic,
     ai_picked_topic: aiPickedTopic,
     thumbnail_url: thumbnailUrl,
+    cantonese_lens_image: cantoneseLensImage,
     content_id: contentId,
   });
 }

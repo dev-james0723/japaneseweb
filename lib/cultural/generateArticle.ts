@@ -20,6 +20,7 @@ import { getCurrentSeason, SEASON_HINTS } from "@/lib/cultural/season";
 import { stripInlineKanaReadings } from "@/lib/furigana";
 import { cleanAiTextBlock } from "@/lib/text/cleanAiText";
 import { generateCulturalArticleThumbnail } from "@/lib/cultural/generateThumbnail";
+import { generateCantoneseLensIllustration } from "@/lib/cultural/generateSectionImage";
 
 export type CulturalUserContext = {
   userId: string;
@@ -190,6 +191,8 @@ export function articleToContentRow(
     isDailyPick?: boolean;
     dailyPickDate?: string;
     thumbnailUrl?: string | null;
+    cantoneseLensImageUrl?: string | null;
+    cantoneseLensImagePrompt?: string | null;
   },
 ) {
   const notes = article.surprising_fact
@@ -215,6 +218,8 @@ export function articleToContentRow(
     key_grammar: article.key_grammar,
     cultural_notes: notes,
     cantonese_lens: article.cantonese_lens,
+    cantonese_lens_image_url: params.cantoneseLensImageUrl ?? null,
+    cantonese_lens_image_prompt: params.cantoneseLensImagePrompt ?? null,
     thumbnail_url: params.thumbnailUrl ?? null,
     is_daily_pick: params.isDailyPick ?? false,
     daily_pick_date: params.dailyPickDate ?? null,
@@ -230,6 +235,8 @@ export async function saveCulturalArticle(
     isDailyPick?: boolean;
     dailyPickDate?: string;
     thumbnailUrl?: string | null;
+    cantoneseLensImageUrl?: string | null;
+    cantoneseLensImagePrompt?: string | null;
   },
 ): Promise<{ id: string }> {
   const row = articleToContentRow(article, params);
@@ -332,6 +339,12 @@ export async function runDailyCulturalPickForUser(
     article = { ...article, difficulty_jlpt: phaseToJlpt(ctx.phase) };
   }
 
+  const cantoneseLensImage = await generateCantoneseLensIllustration({
+    userId,
+    article,
+    category,
+  });
+
   await clearExistingDailyPick(supabase, userId, today);
   const { id } = await saveCulturalArticle(supabase, article, {
     userId,
@@ -339,6 +352,8 @@ export async function runDailyCulturalPickForUser(
     isDailyPick: true,
     dailyPickDate: today,
     thumbnailUrl,
+    cantoneseLensImageUrl: cantoneseLensImage?.imageUrl ?? null,
+    cantoneseLensImagePrompt: cantoneseLensImage?.prompt ?? null,
   });
 
   await supabase
