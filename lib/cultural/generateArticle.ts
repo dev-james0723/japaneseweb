@@ -17,6 +17,9 @@ import {
 } from "@/lib/cultural/schemas";
 import { ensureCulturalPreferences } from "@/lib/cultural/preferences";
 import { getCurrentSeason, SEASON_HINTS } from "@/lib/cultural/season";
+import { stripInlineKanaReadings } from "@/lib/furigana";
+import { cleanAiTextBlock } from "@/lib/text/cleanAiText";
+import { generateCulturalArticleThumbnail } from "@/lib/cultural/generateThumbnail";
 
 export type CulturalUserContext = {
   userId: string;
@@ -147,7 +150,36 @@ export async function generateCulturalArticle(params: {
   if (!parsed.success) {
     throw new Error("ARTICLE_SCHEMA_INVALID:" + parsed.error.issues[0]?.message);
   }
-  return parsed.data;
+  return normalizeGeneratedCulturalArticle(parsed.data);
+}
+
+function normalizeGeneratedCulturalArticle(
+  article: GeneratedCulturalArticle,
+): GeneratedCulturalArticle {
+  return {
+    ...article,
+    title_ja: stripInlineKanaReadings(article.title_ja),
+    summary_ja: stripInlineKanaReadings(article.summary_ja),
+    cultural_notes: cleanAiTextBlock(article.cultural_notes),
+    cantonese_lens: cleanAiTextBlock(article.cantonese_lens),
+    surprising_fact: cleanAiTextBlock(article.surprising_fact),
+    body_paragraphs: article.body_paragraphs.map((paragraph) => ({
+      ...paragraph,
+      ja: stripInlineKanaReadings(paragraph.ja),
+      zh: cleanAiTextBlock(paragraph.zh),
+      kana_ruby: paragraph.kana_ruby ? stripInlineKanaReadings(paragraph.kana_ruby) : "",
+    })),
+    key_vocab: article.key_vocab.map((vocab) => ({
+      ...vocab,
+      word: stripInlineKanaReadings(vocab.word),
+      example_sentence: stripInlineKanaReadings(vocab.example_sentence ?? ""),
+    })),
+    key_grammar: article.key_grammar.map((grammar) => ({
+      ...grammar,
+      example_ja: stripInlineKanaReadings(grammar.example_ja),
+      meaning_zh: cleanAiTextBlock(grammar.meaning_zh),
+    })),
+  };
 }
 
 export function articleToContentRow(
@@ -157,6 +189,7 @@ export function articleToContentRow(
     category: CulturalCategory;
     isDailyPick?: boolean;
     dailyPickDate?: string;
+    thumbnailUrl?: string | null;
   },
 ) {
   const notes = article.surprising_fact
@@ -182,6 +215,7 @@ export function articleToContentRow(
     key_grammar: article.key_grammar,
     cultural_notes: notes,
     cantonese_lens: article.cantonese_lens,
+    thumbnail_url: params.thumbnailUrl ?? null,
     is_daily_pick: params.isDailyPick ?? false,
     daily_pick_date: params.dailyPickDate ?? null,
   };
@@ -195,6 +229,7 @@ export async function saveCulturalArticle(
     category: CulturalCategory;
     isDailyPick?: boolean;
     dailyPickDate?: string;
+    thumbnailUrl?: string | null;
   },
 ): Promise<{ id: string }> {
   const row = articleToContentRow(article, params);
@@ -271,14 +306,24 @@ export async function runDailyCulturalPickForUser(
     topic = `${CATEGORY_FALLBACK_TOPIC[category]}（${today}）`;
   }
 
+  const thumbnailPromise = generateCulturalArticleThumbnail({
+    userId,
+    topic,
+    category,
+  });
+
   let article: GeneratedCulturalArticle;
+  let thumbnailUrl: string | null = null;
   try {
-    article = await generateCulturalArticle({
-      topic,
-      category,
-      userPhase: ctx.phase,
-      languageBlendOverride: ctx.languageBlendOverride,
-    });
+    [article, thumbnailUrl] = await Promise.all([
+      generateCulturalArticle({
+        topic,
+        category,
+        userPhase: ctx.phase,
+        languageBlendOverride: ctx.languageBlendOverride,
+      }),
+      thumbnailPromise,
+    ]);
   } catch (e) {
     return { ok: false, reason: String(e instanceof Error ? e.message : e) };
   }
@@ -293,6 +338,7 @@ export async function runDailyCulturalPickForUser(
     category,
     isDailyPick: true,
     dailyPickDate: today,
+    thumbnailUrl,
   });
 
   await supabase

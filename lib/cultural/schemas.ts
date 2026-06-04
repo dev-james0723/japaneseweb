@@ -46,7 +46,16 @@ export const TopicSuggestionSchema = z.object({
 });
 
 export const GenerateArticleRequestSchema = z.object({
-  topic: z.string().min(1).max(200),
+  topic: z
+    .string()
+    .max(200)
+    .optional()
+    .default("")
+    .transform((value) => value.trim())
+    .refine(
+      (value) => value.length === 0 || value.length >= 2,
+      "題材太短，請寫至少 2 個字，或留空讓 AI 替你揀。",
+    ),
   category: z.enum(CULTURAL_CATEGORIES).optional(),
   save: z.boolean().optional().default(true),
   as_daily_pick: z.boolean().optional().default(false),

@@ -7,6 +7,7 @@ const Body = z.object({
   vocabId: z.string().uuid(),
   deckId: z.string().uuid().optional().nullable(),
   isCorrect: z.boolean(),
+  rating: z.enum(["again", "hard", "good", "easy"]).optional(),
   quizType: z.string().max(40).optional(),
   prompt: z.string().max(400).optional(),
   userAnswer: z.string().max(400).optional(),
@@ -27,12 +28,12 @@ export async function POST(req: Request) {
 
   const { data: existing } = await supabase
     .from("reviews")
-    .select("review_count, correct_count, incorrect_count, ease_score, status")
+    .select("review_count, correct_count, incorrect_count, ease_score, status, stability, difficulty, lapses, is_leech")
     .eq("user_id", user.id)
     .eq("vocab_id", parsed.data.vocabId)
     .maybeSingle();
 
-  const sched = nextSchedule(existing ?? null, parsed.data.isCorrect);
+  const sched = nextSchedule(existing ?? null, parsed.data.isCorrect, new Date(), parsed.data.rating);
 
   const { error: reviewErr } = await supabase.from("reviews").upsert(
     {
@@ -41,11 +42,17 @@ export async function POST(req: Request) {
       deck_id: parsed.data.deckId ?? null,
       review_date: sched.review_date,
       next_review_date: sched.next_review_date,
+      next_review_at: sched.next_review_at,
       review_count: sched.review_count,
       correct_count: sched.correct_count,
       incorrect_count: sched.incorrect_count,
       ease_score: sched.ease_score,
       status: sched.status,
+      stability: sched.stability,
+      difficulty: sched.difficulty,
+      lapses: sched.lapses,
+      is_leech: sched.is_leech,
+      fsrs_state: sched.fsrs_state,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "user_id,vocab_id" },

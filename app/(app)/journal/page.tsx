@@ -1,6 +1,9 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { GlassPanel } from "@/components/GlassPanel";
+import { FuriganaText } from "@/components/FuriganaText";
+import { JapaneseSentence } from "@/components/JapaneseSentence";
+import { SpeakerButton } from "@/components/SpeakerButton";
 import { todayDateString } from "@/lib/os/types";
 import { JournalEditor } from "./JournalEditor";
 
@@ -70,10 +73,7 @@ export default async function JournalPage() {
           <h2 className="text-sm font-semibold px-1">最近紀錄</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
             {recent.map((e) => (
-              <GlassPanel key={e.id} variant="subtle" className="p-3">
-                <div className="text-[10px] text-[var(--text-muted)]">{e.entry_date} · {e.sentence_count ?? 0} 句</div>
-                <div className="text-xs text-[var(--text-secondary)] line-clamp-3 mt-1">{e.content_ja}</div>
-              </GlassPanel>
+              <RecentEntryCard key={e.id} entry={e} />
             ))}
           </div>
         </section>
@@ -96,7 +96,7 @@ type EntryRow = {
   created_at: string;
 };
 
-function EntryCard({ entry }: { entry: EntryRow }) {
+async function EntryCard({ entry }: { entry: EntryRow }) {
   const corrections = entry.ai_corrections?.corrections ?? [];
   const praise = entry.ai_corrections?.praise;
   return (
@@ -104,19 +104,28 @@ function EntryCard({ entry }: { entry: EntryRow }) {
       <div className="text-[10px] text-[var(--text-muted)] mb-2">
         {new Date(entry.created_at).toLocaleTimeString("zh-Hant-TW", { hour: "2-digit", minute: "2-digit" })}
       </div>
-      <p className="text-sm whitespace-pre-wrap font-jp leading-relaxed mb-3">{entry.content_ja}</p>
+      <JapaneseSentence text={entry.content_ja} preWrap className="mb-3" />
       {entry.ai_natural_version && (
         <div className="mt-3 p-3 rounded-lg bg-[var(--accent-lime-bg)]/30 border border-[var(--accent-lime)]/20">
           <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--accent-lime)] mb-1">✨ 自然說法</div>
-          <p className="text-sm font-jp leading-relaxed">{entry.ai_natural_version}</p>
+          <JapaneseSentence text={entry.ai_natural_version} />
         </div>
       )}
       {corrections.length > 0 && (
         <ul className="mt-3 space-y-2">
           {corrections.map((c: any, i: number) => (
             <li key={i} className="text-xs">
-              <span className="text-red-400 line-through">{c.original}</span>{" "}
-              <span className="text-[var(--accent-lime)]">→ {c.corrected}</span>
+              <div className="flex flex-wrap items-start gap-x-2 gap-y-1">
+                <div className="flex items-start gap-1.5">
+                  <FuriganaText text={c.original} size="xs" inline className="text-red-400 line-through" />
+                  <SpeakerButton text={c.original} size="sm" className="!w-6 !h-6 shrink-0" />
+                </div>
+                <span className="text-[var(--text-muted)]">→</span>
+                <div className="flex items-start gap-1.5">
+                  <FuriganaText text={c.corrected} size="xs" inline className="text-[var(--accent-lime)]" />
+                  <SpeakerButton text={c.corrected} size="sm" className="!w-6 !h-6 shrink-0" />
+                </div>
+              </div>
               <div className="text-[var(--text-muted)] mt-0.5">[{c.category}] {c.explanation_zh}</div>
             </li>
           ))}
@@ -131,8 +140,34 @@ function EntryCard({ entry }: { entry: EntryRow }) {
         </div>
       )}
       {praise && (
-        <div className="mt-3 text-xs italic text-[var(--accent-sakura)]">💮 {praise}</div>
+        <div className="mt-3 text-xs italic text-[var(--accent-sakura)]">
+          <JapaneseSentence text={`💮 ${praise}`} size="xs" speakerSize="sm" />
+        </div>
       )}
+    </GlassPanel>
+  );
+}
+
+type RecentRow = {
+  id: string;
+  entry_date: string;
+  sentence_count: number | null;
+  content_ja: string;
+};
+
+async function RecentEntryCard({ entry }: { entry: RecentRow }) {
+  return (
+    <GlassPanel variant="subtle" className="p-3">
+      <div className="text-[10px] text-[var(--text-muted)]">
+        {entry.entry_date} · {entry.sentence_count ?? 0} 句
+      </div>
+      <JapaneseSentence
+        text={entry.content_ja}
+        size="xs"
+        speakerSize="sm"
+        className="mt-1"
+        textClassName="line-clamp-3 text-[var(--text-secondary)]"
+      />
     </GlassPanel>
   );
 }

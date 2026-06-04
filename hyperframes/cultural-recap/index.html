@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="zh-Hant" data-resolution="landscape">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html,
+      body {
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #080705;
+        color: #fff;
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          sans-serif;
+      }
+
+      .scene {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        padding: 92px;
+        background:
+          radial-gradient(circle at 14% 10%, rgba(215, 239, 105, 0.22), transparent 31%),
+          radial-gradient(circle at 86% 82%, rgba(145, 213, 232, 0.18), transparent 34%),
+          linear-gradient(145deg, #1b1712 0%, #0d0b09 52%, #030302 100%);
+      }
+
+      .frame {
+        position: absolute;
+        inset: 70px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 42px;
+        background: rgba(255, 255, 255, 0.055);
+        box-shadow: 0 40px 130px rgba(0, 0, 0, 0.48);
+      }
+
+      .label {
+        color: #d7ef69;
+        font-size: 28px;
+        font-weight: 800;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+      }
+
+      .title {
+        max-width: 1180px;
+        margin-top: 34px;
+        font-size: 86px;
+        font-weight: 850;
+        line-height: 1.06;
+      }
+
+      .subtitle {
+        margin-top: 30px;
+        color: rgba(255, 255, 255, 0.78);
+        font-size: 38px;
+      }
+
+      .summary {
+        position: absolute;
+        left: 120px;
+        bottom: 130px;
+        width: 880px;
+        color: rgba(255, 255, 255, 0.76);
+        font-size: 30px;
+        line-height: 1.55;
+      }
+
+      .vocab {
+        position: absolute;
+        right: 122px;
+        bottom: 120px;
+        display: grid;
+        width: 540px;
+        gap: 18px;
+      }
+
+      .chip {
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 22px;
+        background: rgba(0, 0, 0, 0.25);
+        padding: 19px 24px;
+        font-size: 32px;
+        font-weight: 760;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="8"
+      data-width="1920"
+      data-height="1080"
+    >
+      <section class="scene">
+        <div class="frame"></div>
+        <div class="copy">
+          <div class="label">Cultural Recap</div>
+          <h1 class="title" data-field="title">日本文化沉浸</h1>
+          <p class="subtitle" data-field="subtitle">一篇文章，幾個可帶走的日文觀察。</p>
+        </div>
+        <p class="summary" data-field="summary">
+          讀一段文化故事，把漢字、假名、語感與香港視角連起來。
+        </p>
+        <div class="vocab">
+          <div class="chip" data-word="0">文化</div>
+          <div class="chip" data-word="1">語感</div>
+          <div class="chip" data-word="2">季節</div>
+          <div class="chip" data-word="3">記憶</div>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      const vars = window.__hyperframes?.getVariables?.() || {};
+      document.querySelector('[data-field="title"]').textContent =
+        vars.title || "日本文化沉浸";
+      document.querySelector('[data-field="subtitle"]').textContent =
+        vars.subtitle || "一篇文章，幾個可帶走的日文觀察。";
+      document.querySelector('[data-field="summary"]').textContent =
+        vars.summary || "讀一段文化故事，把漢字、假名、語感與香港視角連起來。";
+      const words = Array.isArray(vars.vocab) ? vars.vocab : ["文化", "語感", "季節", "記憶"];
+      document.querySelectorAll("[data-word]").forEach((node, index) => {
+        node.textContent = words[index] || words[0] || "日文";
+      });
+
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      tl.from(".frame", { autoAlpha: 0, scale: 0.98, duration: 0.8, ease: "power2.out" }, 0)
+        .from(".label", { autoAlpha: 0, y: 18, duration: 0.42, ease: "power2.out" }, 0.12)
+        .from(".title", { autoAlpha: 0, y: 34, duration: 0.72, ease: "power3.out" }, 0.2)
+        .from(".subtitle", { autoAlpha: 0, y: 22, duration: 0.54, ease: "power2.out" }, 0.45)
+        .from(".summary", { autoAlpha: 0, y: 20, duration: 0.6, ease: "power2.out" }, 1.05)
+        .from(".chip", { autoAlpha: 0, x: 38, stagger: 0.12, duration: 0.5, ease: "power2.out" }, 1.24)
+        .to(".frame", { boxShadow: "0 0 120px rgba(215,239,105,0.22)", duration: 2.4, ease: "sine.inOut" }, 2.2);
+      window.__timelines.main = tl;
+    </script>
+  </body>
+</html>

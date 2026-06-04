@@ -1,11 +1,18 @@
 import { NextResponse } from "next/server";
-import { CULTURAL_CATEGORIES } from "@/lib/cultural/categories";
 import {
+  CULTURAL_CATEGORIES,
+  CULTURAL_CATEGORY_LABELS,
+} from "@/lib/cultural/categories";
+import {
+  clearExistingDailyPick,
+  fetchRecentTopics,
   fetchCulturalUserContext,
   generateCulturalArticle,
   resolveCategoryForUser,
   saveCulturalArticle,
+  suggestCulturalTopic,
 } from "@/lib/cultural/generateArticle";
+import { generateCulturalArticleThumbnail } from "@/lib/cultural/generateThumbnail";
 import { GenerateArticleRequestSchema } from "@/lib/cultural/schemas";
 import { todayDateString } from "@/lib/os/types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -36,15 +43,42 @@ export async function POST(req: Request) {
   const ctx = await fetchCulturalUserContext(supabase, user.id);
 
   const category = resolveCategoryForUser(ctx, categoryInput);
+  let resolvedTopic = topic;
+  let aiPickedTopic = false;
+
+  if (!resolvedTopic) {
+    aiPickedTopic = true;
+    const avoidTopics = await fetchRecentTopics(supabase, user.id);
+    try {
+      const suggestion = await suggestCulturalTopic({
+        category,
+        phase: ctx.phase,
+        avoidTopics,
+      });
+      resolvedTopic = suggestion.topic;
+    } catch {
+      resolvedTopic = `今日的${CULTURAL_CATEGORY_LABELS[category].zh}觀察`;
+    }
+  }
+
+  const thumbnailPromise = generateCulturalArticleThumbnail({
+    userId: user.id,
+    topic: resolvedTopic,
+    category,
+  });
 
   let article;
+  let thumbnailUrl: string | null = null;
   try {
-    article = await generateCulturalArticle({
-      topic,
-      category,
-      userPhase: ctx.phase,
-      languageBlendOverride: ctx.languageBlendOverride,
-    });
+    [article, thumbnailUrl] = await Promise.all([
+      generateCulturalArticle({
+        topic: resolvedTopic,
+        category,
+        userPhase: ctx.phase,
+        languageBlendOverride: ctx.languageBlendOverride,
+      }),
+      thumbnailPromise,
+    ]);
   } catch (e: unknown) {
     const err = e instanceof Error ? e.message : String(e);
     if (err === "GEMINI_API_KEY_NOT_SET") {
@@ -66,11 +100,15 @@ export async function POST(req: Request) {
   if (save) {
     try {
       const today = todayDateString();
+      if (as_daily_pick) {
+        await clearExistingDailyPick(supabase, user.id, today);
+      }
       const { id } = await saveCulturalArticle(supabase, article, {
         userId: user.id,
         category,
         isDailyPick: as_daily_pick,
         dailyPickDate: as_daily_pick ? today : undefined,
+        thumbnailUrl,
       });
       contentId = id;
       if (as_daily_pick) {
@@ -103,6 +141,9 @@ export async function POST(req: Request) {
     article,
     category,
     phase: ctx.phase,
+    topic: resolvedTopic,
+    ai_picked_topic: aiPickedTopic,
+    thumbnail_url: thumbnailUrl,
     content_id: contentId,
   });
 }

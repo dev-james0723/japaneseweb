@@ -21,8 +21,8 @@ function LoginForm() {
   }, [state]);
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-4">
-      <div className="glass-panel p-8 w-full max-w-md animate-glassFadeIn">
+    <main className="flex min-h-[100dvh] items-center justify-center overflow-x-hidden px-4 py-10">
+      <div className="glass-panel w-full max-w-[28rem] animate-glassFadeIn p-6 sm:p-8">
         <h1 className="text-2xl font-semibold mb-2">登入</h1>
         <p className="text-sm text-[var(--text-secondary)] mb-6">
           歡迎回來，繼續今日的日文學習。
@@ -94,8 +94,8 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <main className="min-h-screen flex items-center justify-center px-4">
-          <div className="glass-panel p-8 w-full max-w-md animate-glassFadeIn">
+        <main className="flex min-h-[100dvh] items-center justify-center overflow-x-hidden px-4 py-10">
+          <div className="glass-panel w-full max-w-[28rem] animate-glassFadeIn p-6 sm:p-8">
             <p className="text-sm text-[var(--text-secondary)] text-center">載入中…</p>
           </div>
         </main>

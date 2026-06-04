@@ -29,11 +29,14 @@ export default async function NotebookPage() {
 
   return (
     <div className="space-y-6">
-      <header className="flex items-center gap-3">
-        <Notebook className="w-5 h-5 text-[var(--accent-lime)]" />
+      <header className="flex items-start gap-3">
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.045] text-[var(--accent-lime)]">
+          <Notebook className="w-5 h-5" />
+        </span>
         <div>
-          <h1 className="text-2xl md:text-3xl font-semibold mb-1">筆記本</h1>
-          <p className="text-sm text-[var(--text-secondary)]">
+          <p className="section-eyebrow mb-1">Notebook</p>
+          <h1 className="text-2xl md:text-3xl font-semibold">筆記本</h1>
+          <p className="body-pretty mt-2 max-w-2xl text-sm text-[var(--text-secondary)]">
             隨手收藏單字、片語與摘抄，用資料夾整理，不影響複習排程。
           </p>
         </div>

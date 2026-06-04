@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { GlassPanel } from "@/components/GlassPanel";
 import { ImageLightbox } from "@/components/ImageLightbox";
+import { KanaKanjiBridge } from "@/components/KanaKanjiBridge";
 import { SpeakerButton } from "@/components/SpeakerButton";
 import { AddToNotebookButton } from "@/components/AddToNotebookButton";
 import {
@@ -343,6 +344,14 @@ function WordsTab({ items }: { items: Item[] }) {
             {v.meaning_zh && (
               <p className="text-sm text-[var(--zh-text)] mt-3">{v.meaning_zh}</p>
             )}
+            <KanaKanjiBridge
+              japanese={v.japanese}
+              kana={v.kana}
+              romaji={v.romaji}
+              meaning={v.meaning_zh}
+              compact
+              className="mt-3"
+            />
             {v.core_explanation && (
               <p className="text-xs text-[var(--text-muted)] mt-2 leading-relaxed">
                 {v.core_explanation}
@@ -357,7 +366,7 @@ function WordsTab({ items }: { items: Item[] }) {
             </div>
             {v.notes && (
               <p className="text-xs text-[var(--accent-sakura)]/80 mt-3 italic leading-relaxed">
-                💡 {v.notes}
+                提示：{v.notes}
               </p>
             )}
             <AddToNotebookButton vocabId={v.id} className="mt-3" />
@@ -850,6 +859,7 @@ function QuizTab({ items, deckId }: { items: Item[]; deckId: string }) {
           vocabId: cur.id,
           deckId,
           isCorrect,
+          rating: isCorrect ? "good" : "again",
           quizType: "recognition",
           prompt: cur.japanese,
           userAnswer: opt,
@@ -886,16 +896,25 @@ function QuizTab({ items, deckId }: { items: Item[]; deckId: string }) {
         ))}
       </div>
       {revealed && (
-        <div className="mt-5 flex items-center justify-end gap-3">
-          <button
-            onClick={() => {
-              setRevealed(false);
-              setIdx((i) => i + 1);
-            }}
-            className="btn-primary"
-          >
-            下一題
-          </button>
+        <div className="mt-5 space-y-4">
+          <KanaKanjiBridge
+            japanese={cur.japanese}
+            kana={cur.kana}
+            romaji={cur.romaji}
+            meaning={cur.meaning_zh}
+            compact
+          />
+          <div className="flex items-center justify-end gap-3">
+            <button
+              onClick={() => {
+                setRevealed(false);
+                setIdx((i) => i + 1);
+              }}
+              className="btn-primary"
+            >
+              下一題
+            </button>
+          </div>
         </div>
       )}
     </GlassPanel>

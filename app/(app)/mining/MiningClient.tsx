@@ -64,7 +64,11 @@ export function MiningClient() {
         sentences: toSave,
       });
       if (!res.ok) { setMsg(res.error); return; }
-      setMsg(`✓ 已儲存 ${res.saved} 句`);
+      setMsg(
+        res.warning
+          ? `已儲存 ${res.saved} 句。${res.warning}`
+          : `已儲存 ${res.saved} 句，建立 ${res.reviewPrompts} 張複習卡。`,
+      );
       setCandidates([]);
       setSelected(new Set());
       setText("");
@@ -74,7 +78,11 @@ export function MiningClient() {
 
   function toggle(i: number) {
     const next = new Set(selected);
-    next.has(i) ? next.delete(i) : next.add(i);
+    if (next.has(i)) {
+      next.delete(i);
+    } else {
+      next.add(i);
+    }
     setSelected(next);
   }
 

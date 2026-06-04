@@ -6,6 +6,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getOpenAI } from "@/lib/ai/openai";
 import { runSentenceMining } from "@/lib/ai/runSentenceMining";
 import { type MinedSentence } from "@/lib/ai/schemas/sentenceMining";
+import { buildSentenceReviewPrompts } from "@/lib/sentenceReview";
 
 const MineSchema = z.object({
   text: z.string().min(10).max(5000),
@@ -75,9 +76,22 @@ export async function saveMinedSentencesAction(input: z.infer<typeof SaveSchema>
     cloze_target: s.cloze_target ?? null,
   }));
 
-  const { error } = await supabase.from("mined_sentences").insert(rows);
+  const { data: savedRows, error } = await supabase
+    .from("mined_sentences")
+    .insert(rows)
+    .select("id, user_id, sentence_ja, kana_reading, translation_zh, difficulty_jlpt, key_vocab, key_grammar, cloze_target");
   if (error) return { ok: false as const, error: "儲存失敗：" + error.message };
 
+  const prompts = (savedRows ?? []).flatMap((sentence) => buildSentenceReviewPrompts(sentence));
+  let warning: string | undefined;
+  if (prompts.length) {
+    const { error: promptError } = await supabase.from("sentence_review_prompts").insert(prompts);
+    if (promptError) {
+      warning = "句子已儲存，但複習卡建立失敗：" + promptError.message;
+    }
+  }
+
   revalidatePath("/mining");
-  return { ok: true as const, saved: rows.length };
+  revalidatePath("/review");
+  return { ok: true as const, saved: rows.length, reviewPrompts: warning ? 0 : prompts.length, warning };
 }

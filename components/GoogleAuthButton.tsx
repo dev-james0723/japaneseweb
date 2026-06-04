@@ -64,7 +64,7 @@ export function GoogleAuthButton({ nextPath = "/dashboard", label = "使用 Goog
         type="button"
         onClick={onClick}
         disabled={loading}
-        className="w-full inline-flex items-center justify-center gap-2.5 rounded-[10px] border border-[var(--border-glass)] bg-[rgba(255,255,255,0.06)] px-4 py-2.5 text-sm font-medium text-[var(--text-primary)] transition hover:bg-[rgba(255,255,255,0.1)] disabled:opacity-60"
+        className="inline-flex w-full items-center justify-center gap-2.5 rounded-full border border-[var(--border-glass)] bg-[rgba(255,255,255,0.06)] px-4 py-2.5 text-sm font-medium text-[var(--text-primary)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[rgba(255,255,255,0.1)] disabled:opacity-60"
       >
         <GoogleMark className="h-5 w-5 shrink-0" />
         {loading ? "導向 Google…" : label}

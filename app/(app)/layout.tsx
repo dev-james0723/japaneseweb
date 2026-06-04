@@ -2,6 +2,9 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Sidebar } from "@/components/Sidebar";
 import { TopBar } from "@/components/TopBar";
+import { MotionShell } from "@/components/MotionShell";
+import { SelectionInspector } from "@/components/SelectionInspector";
+import { todayDateString } from "@/lib/os/types";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +24,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     console.error("[app layout] profiles:", profileError.message);
   }
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayDateString();
   const { count: dueCount, error: reviewsError } = await supabase
     .from("reviews")
     .select("id", { count: "exact", head: true })
@@ -35,13 +38,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const due = reviewsError ? 0 : (dueCount ?? 0);
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-[100dvh] flex">
+      <a href="#app-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 btn-primary">
+        跳到主要內容
+      </a>
       <Sidebar displayName={profile?.display_name} />
       <div className="flex-1 min-w-0">
         <TopBar streak={0} dueCount={due} displayName={profile?.display_name} />
-        <div className="px-4 md:px-6 py-6 md:py-8 max-w-[1360px] mx-auto">
-          {children}
-        </div>
+        <main id="app-content" className="px-4 md:px-6 py-6 md:py-8 max-w-[1380px] mx-auto">
+          <MotionShell>{children}</MotionShell>
+        </main>
+        <SelectionInspector />
       </div>
     </div>
   );
