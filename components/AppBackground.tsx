@@ -5,7 +5,7 @@ export function AppBackground() {
         className="absolute inset-0 animate-subtlePan"
         style={{
           backgroundImage:
-            "radial-gradient(1200px 800px at 20% 10%, rgba(251, 191, 36, 0.10), transparent 60%), radial-gradient(900px 700px at 80% 90%, rgba(125, 211, 252, 0.08), transparent 65%), linear-gradient(160deg, #1a1410 0%, #0c0a09 45%, #050403 100%)",
+            "radial-gradient(1200px 800px at 18% 8%, rgba(239, 189, 99, 0.11), transparent 62%), radial-gradient(980px 720px at 86% 86%, rgba(145, 213, 232, 0.075), transparent 66%), linear-gradient(160deg, #1b1712 0%, #0d0b09 48%, #050403 100%)",
           backgroundSize: "120% 120%",
           backgroundPosition: "50% 50%",
         }}
@@ -14,7 +14,7 @@ export function AppBackground() {
         className="absolute inset-0"
         style={{
           background:
-            "radial-gradient(circle at center, rgba(0,0,0,0.12), rgba(0,0,0,0.58)), linear-gradient(180deg, rgba(0,0,0,0.10), rgba(0,0,0,0.35))",
+            "radial-gradient(circle at center, rgba(0,0,0,0.08), rgba(0,0,0,0.6)), linear-gradient(180deg, rgba(255,250,239,0.035), rgba(0,0,0,0.38))",
         }}
       />
       {/* subtle paper-grain noise */}

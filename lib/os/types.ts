@@ -72,18 +72,59 @@ export function layerCompletion(log: OsBootLog | null): number {
   return Math.round((done / 5) * 100);
 }
 
-export function todayDateString(): string {
-  return new Date().toISOString().slice(0, 10);
+function resolveDefaultStudyTimeZone(): string {
+  const env =
+    typeof process === "undefined"
+      ? {}
+      : (process.env as Record<string, string | undefined>);
+  return (
+    env.STUDY_TIME_ZONE ||
+    env.NEXT_PUBLIC_STUDY_TIME_ZONE ||
+    env.APP_TIME_ZONE ||
+    env.TZ ||
+    "Asia/Hong_Kong"
+  );
 }
 
-export function weekStartDate(d: Date = new Date()): string {
-  const date = new Date(d);
-  const day = date.getDay(); // 0=Sun..6=Sat
+function datePartsInTimeZone(date: Date, timeZone: string) {
+  const parts = new Intl.DateTimeFormat("en", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+  const day = parts.find((part) => part.type === "day")?.value;
+  if (!year || !month || !day) return null;
+  return { year: Number(year), month: Number(month), day: Number(day) };
+}
+
+export function dateStringInTimeZone(
+  date: Date = new Date(),
+  timeZone = resolveDefaultStudyTimeZone(),
+): string {
+  const parts = datePartsInTimeZone(date, timeZone);
+  if (!parts) return date.toISOString().slice(0, 10);
+  return `${parts.year}-${String(parts.month).padStart(2, "0")}-${String(parts.day).padStart(2, "0")}`;
+}
+
+export function todayDateString(): string {
+  return dateStringInTimeZone();
+}
+
+export function weekStartDate(d: Date = new Date(), timeZone = resolveDefaultStudyTimeZone()): string {
+  const parts = datePartsInTimeZone(d, timeZone);
+  if (!parts) return d.toISOString().slice(0, 10);
+  const date = new Date(Date.UTC(parts.year, parts.month - 1, parts.day));
+  const day = date.getUTCDay(); // 0=Sun..6=Sat
   const diff = day === 0 ? -6 : 1 - day; // ISO week starts Monday
-  date.setDate(date.getDate() + diff);
+  date.setUTCDate(date.getUTCDate() + diff);
   return date.toISOString().slice(0, 10);
 }
 
-export function monthStartDate(d: Date = new Date()): string {
-  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);
+export function monthStartDate(d: Date = new Date(), timeZone = resolveDefaultStudyTimeZone()): string {
+  const parts = datePartsInTimeZone(d, timeZone);
+  if (!parts) return d.toISOString().slice(0, 10);
+  return `${parts.year}-${String(parts.month).padStart(2, "0")}-01`;
 }

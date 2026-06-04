@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 
 export type AppNavItem = { href: string; label: string; icon: LucideIcon };
+export type AppNavGroup = { label: string; items: AppNavItem[] };
 
 export const APP_NAV: AppNavItem[] = [
   { href: "/dashboard", label: "今日開機", icon: LayoutDashboard },
@@ -41,6 +42,35 @@ export const APP_NAV: AppNavItem[] = [
   { href: "/weekly-review", label: "每週回顧", icon: CalendarClock },
   { href: "/monthly-audit", label: "每月檢討", icon: Moon },
   { href: "/settings", label: "設定", icon: Settings },
+];
+
+const navByHref = new Map(APP_NAV.map((item) => [item.href, item]));
+
+function pickNavItems(hrefs: string[]): AppNavItem[] {
+  return hrefs.map((href) => navByHref.get(href)).filter((item): item is AppNavItem => Boolean(item));
+}
+
+export const APP_NAV_GROUPS: AppNavGroup[] = [
+  {
+    label: "今日",
+    items: pickNavItems(["/dashboard", "/review", "/decks", "/decks/new", "/decks/new?mode=ai"]),
+  },
+  {
+    label: "練習",
+    items: pickNavItems([
+      "/grammar",
+      "/journal",
+      "/cultural",
+      "/mining",
+      "/talk-me",
+      "/roleplay",
+      "/notebook",
+    ]),
+  },
+  {
+    label: "節奏",
+    items: pickNavItems(["/calendar", "/quizzes", "/stats", "/weekly-review", "/monthly-audit", "/settings"]),
+  },
 ];
 
 export function isNavItemActive(pathname: string, itemHref: string): boolean {

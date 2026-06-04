@@ -26,7 +26,13 @@ export function TalkMeLogger() {
         addToMined: addToMined && !!sentence,
       });
       if (!res.ok) { setMsg(res.error); return; }
-      setMsg("✓ 已記錄");
+      setMsg(
+        res.warning
+          ? `已記錄。${res.warning}`
+          : res.reviewPrompts
+            ? `已記錄，並建立 ${res.reviewPrompts} 張複習卡。`
+            : "已記錄。",
+      );
       setLessons("");
       setSentence("");
       setShadowing(false);
@@ -71,6 +77,11 @@ export function TalkMeLogger() {
           className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm font-jp"
         />
       </label>
+      <div className="grid gap-2 rounded-xl border border-white/10 bg-white/[0.035] p-3 text-xs text-[var(--text-secondary)] md:grid-cols-3">
+        <ShadowingStep number="1" text="先只聽一次，抓節奏和重音。" />
+        <ShadowingStep number="2" text="看文字跟讀三次，貼近原速。" />
+        <ShadowingStep number="3" text="遮住文字再說一次，保存最有用的一句。" />
+      </div>
       <div className="flex flex-wrap gap-4 text-xs">
         <label className="flex items-center gap-2">
           <input type="checkbox" checked={shadowing} onChange={(e) => setShadowing(e.target.checked)} />
@@ -91,6 +102,17 @@ export function TalkMeLogger() {
         </button>
         {msg && <span className="text-xs text-[var(--accent-lime)]">{msg}</span>}
       </div>
+    </div>
+  );
+}
+
+function ShadowingStep({ number, text }: { number: string; text: string }) {
+  return (
+    <div className="flex items-start gap-2">
+      <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full border border-white/10 text-[10px] text-[var(--accent-lime)]">
+        {number}
+      </span>
+      <span className="leading-5">{text}</span>
     </div>
   );
 }

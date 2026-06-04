@@ -25,7 +25,7 @@ function copyCookiesTo(from: NextResponse, to: NextResponse) {
   });
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   try {
     return await runMiddleware(request);
   } catch (e) {

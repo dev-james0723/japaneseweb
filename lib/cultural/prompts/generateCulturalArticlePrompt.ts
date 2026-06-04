@@ -16,7 +16,7 @@ export function generateCulturalArticlePrompt(params: {
 為呢個 topic 寫一篇文化文章：「${topic}」
 Category: ${category}
 讀者 phase: ${userPhase}/6 (1=N5 入門, 6=N2 接近)
-語言比例指引：日文 ${Math.round(blend.ja_ratio * 100)}% / 繁中 ${Math.round(blend.zh_ratio * 100)}%，${blend.show_kana_ruby ? "漢字要附假名 ruby" : "可減少 ruby"}
+語言比例指引：日文 ${Math.round(blend.ja_ratio * 100)}% / 繁中 ${Math.round(blend.zh_ratio * 100)}%，${blend.show_kana_ruby ? "把漢字 reading 放入 kana_ruby / kana 欄位，正文不要用括號重複標音" : "可減少 ruby"}
 
 ## 文章結構要求
 
@@ -25,8 +25,9 @@ Category: ${category}
 3. **文章主體**：分 4-6 個段落
    - 每個段落同時提供 日文 + 繁中 翻譯
    - 日文難度配合 phase ${userPhase}
-   - 漢字附加假名 ruby（kana_ruby 欄）
-4. **Cultural Notes**：用繁體中文，3-5 個 bullet points，深入解釋文化背景
+   - ja 欄只放自然日文正文，不要寫「漢字（かな）」括號標音
+   - kana_ruby 欄可放已加 ruby 的版本或純假名輔助，但不要污染 ja 欄
+4. **Cultural Notes**：用繁體中文，3-5 行純文字 bullet points，深入解釋文化背景
 5. **Cantonese Lens**：${cantoneseContext ? "用廣東話／香港文化做對比（重要！）" : "可省略"}
    - e.g. 「祇園祭 ≈ 香港大坑舞火龍嘅規模 × 京都嘅典雅」
 6. **Key Vocab**：抽 5-10 個關鍵單字
@@ -41,6 +42,8 @@ Category: ${category}
 - 有 narrative storytelling 元素
 - 提供 1 個 "surprising_fact" 令讀者印象深刻
 - 避免常見英語 wiki 嘅 cliché
+- 禁止輸出 HTML tag（例如 <ul>, <li>, <b>）或 markdown code fence
+- title_ja / summary_ja / body_paragraphs[].ja / example_sentence / example_ja 都不要包含括號式 reading（例如 夏祭り（なつまつり））
 
 ## Output Format (STRICT JSON)
 

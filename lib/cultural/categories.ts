@@ -17,7 +17,7 @@ export const CULTURAL_CATEGORY_LABELS: Record<CulturalCategory, { zh: string; em
   traditional_arts: { zh: "傳統藝術", emoji: "🍵" },
   regional_culture: { zh: "地域文化", emoji: "🗾" },
   news_current: { zh: "新聞時事", emoji: "📰" },
-  lifestyle_niche: { zh: "Lifestyle", emoji: "☕" },
+  lifestyle_niche: { zh: "生活小眾", emoji: "☕" },
 };
 
 export function isCulturalCategory(value: string): value is CulturalCategory {

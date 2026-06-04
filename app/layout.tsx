@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { Inter, Noto_Sans_TC, Noto_Sans_JP } from "next/font/google";
+import { Geist, Noto_Sans_TC, Noto_Sans_JP } from "next/font/google";
 import "./globals.css";
 import { AppBackground } from "@/components/AppBackground";
 
-const inter = Inter({
+const geist = Geist({
   subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-geist",
   display: "swap",
 });
 
@@ -35,7 +35,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="zh-Hant" className={`${inter.variable} ${notoTc.variable} ${notoJp.variable}`}>
+    <html
+      lang="zh-Hant"
+      data-scroll-behavior="smooth"
+      className={`${geist.variable} ${notoTc.variable} ${notoJp.variable}`}
+    >
       <body className="font-sans antialiased">
         <AppBackground />
         {children}

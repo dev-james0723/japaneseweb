@@ -18,8 +18,8 @@ export default function SignupPage() {
   }, [state]);
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-4">
-      <div className="glass-panel p-8 w-full max-w-md animate-glassFadeIn">
+    <main className="flex min-h-[100dvh] items-center justify-center overflow-x-hidden px-4 py-10">
+      <div className="glass-panel w-full max-w-[28rem] animate-glassFadeIn p-6 sm:p-8">
         <h1 className="text-2xl font-semibold mb-2">建立帳戶</h1>
         <p className="text-sm text-[var(--text-secondary)] mb-6">
           開始你的日文知識網絡。

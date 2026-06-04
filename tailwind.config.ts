@@ -18,7 +18,7 @@ const config: Config = {
         warning: "#FACC15",
       },
       fontFamily: {
-        sans: ["var(--font-inter)", "var(--font-noto-tc)", "system-ui", "sans-serif"],
+        sans: ["var(--font-geist)", "var(--font-noto-tc)", "system-ui", "sans-serif"],
         jp: ["var(--font-noto-jp)", "var(--font-noto-tc)", "serif"],
         tc: ["var(--font-noto-tc)", "system-ui", "sans-serif"],
       },
