@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import clsx from "clsx";
 import type { LucideIcon } from "lucide-react";
@@ -22,6 +22,8 @@ import {
 import { GlassPanel } from "@/components/GlassPanel";
 import { KanaKanjiBridge } from "@/components/KanaKanjiBridge";
 import { SpeakerButton } from "@/components/SpeakerButton";
+import { recordLeechRepairAction } from "@/lib/actions/repair";
+import { emitOSBuddyEvent } from "@/lib/os-buddy/os-buddy-events";
 import type { ReviewRating } from "@/lib/srs";
 import { sentencePromptLabel, type SentenceReviewPromptType } from "@/lib/sentenceReview";
 
@@ -114,6 +116,8 @@ export function ReviewSession({ items }: { items: Item[] }) {
   const [outcomes, setOutcomes] = useState<Outcome[]>(() => items.map(() => null));
   const [submitting, setSubmitting] = useState(false);
   const [repair, setRepair] = useState<{ item: Item; rating: ReviewRating } | null>(null);
+  const [repairSaving, setRepairSaving] = useState(false);
+  const completeEmittedRef = useRef(false);
 
   const current = items[idx];
   const done = idx >= items.length;
@@ -121,6 +125,16 @@ export function ReviewSession({ items }: { items: Item[] }) {
   const rememberedCount = outcomes.filter((o) => o && o !== "again").length;
   const againCount = outcomes.filter((o) => o === "again").length;
   const hardCount = outcomes.filter((o) => o === "hard").length;
+
+  useEffect(() => {
+    emitOSBuddyEvent({ type: "review:start", count: items.length });
+  }, [items.length]);
+
+  useEffect(() => {
+    if (!done || completeEmittedRef.current) return;
+    completeEmittedRef.current = true;
+    emitOSBuddyEvent({ type: "review:complete", remembered: rememberedCount, total: items.length });
+  }, [done, items.length, rememberedCount]);
 
   async function record(rating: ReviewRating) {
     if (!current || !mode || submitting) return;
@@ -153,6 +167,7 @@ export function ReviewSession({ items }: { items: Item[] }) {
         headers: { "content-type": "application/json" },
         body: JSON.stringify(body),
       });
+      emitOSBuddyEvent({ type: "review:rating", rating });
       setOutcomes((prev) => {
         const next = [...prev];
         next[idx] = rating;
@@ -168,12 +183,41 @@ export function ReviewSession({ items }: { items: Item[] }) {
     }
   }
 
+  async function completeRepair() {
+    if (!repair || repairSaving) return;
+    setRepairSaving(true);
+    try {
+      const item = repair.item;
+      const response = await recordLeechRepairAction({
+        targetType: item.kind === "sentence" ? "sentence" : "vocab",
+        vocabId: item.kind === "vocab" ? item.id : null,
+        sentenceReviewPromptId: item.kind === "sentence" ? item.id : null,
+        activityType: "review_rescue",
+        repairStage: "completed",
+        rating: repair.rating,
+        success: true,
+        evidenceText: item.kind === "sentence" ? item.sentence_ja : item.japanese,
+        metadata: {
+          status: item.status ?? null,
+          lapses: item.lapses ?? null,
+          was_leech: Boolean(item.is_leech),
+          prompt_type: item.kind === "sentence" ? item.prompt_type : null,
+        },
+      });
+      if (!response.ok) console.error("[review] repair evidence:", response.error);
+      setRepair(null);
+    } finally {
+      setRepairSaving(false);
+    }
+  }
+
   if (repair) {
     return (
       <WeakRepairPanel
         item={repair.item}
         rating={repair.rating}
-        onContinue={() => setRepair(null)}
+        saving={repairSaving}
+        onContinue={completeRepair}
       />
     );
   }
@@ -203,6 +247,7 @@ export function ReviewSession({ items }: { items: Item[] }) {
               setOutcomes(items.map(() => null));
               setReveal(false);
               setRepair(null);
+              completeEmittedRef.current = false;
             }}
             className="btn-primary"
           >
@@ -467,10 +512,12 @@ function PromptView({ item, mode }: { item: Item; mode: ReviewMode }) {
 function WeakRepairPanel({
   item,
   rating,
+  saving,
   onContinue,
 }: {
   item: Item;
   rating: ReviewRating;
+  saving: boolean;
   onContinue: () => void;
 }) {
   if (item.kind === "sentence") {
@@ -478,7 +525,7 @@ function WeakRepairPanel({
       <GlassPanel className="p-6 md:p-8">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
-            <p className="section-eyebrow mb-2">Sentence rescue</p>
+            <p className="section-eyebrow mb-2">句子救援</p>
             <h2 className="text-xl font-semibold">把句子變成可開口的模式</h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-secondary)]">
               {rating === "again"
@@ -508,8 +555,8 @@ function WeakRepairPanel({
         </div>
 
         <div className="mt-6 flex justify-end">
-          <button type="button" onClick={onContinue} className="btn-primary">
-            下一張
+          <button type="button" onClick={onContinue} disabled={saving} className="btn-primary disabled:opacity-60">
+            {saving ? "記錄中…" : "完成修復"}
             <ArrowRight className="h-4 w-4" />
           </button>
         </div>
@@ -521,7 +568,7 @@ function WeakRepairPanel({
     <GlassPanel className="p-6 md:p-8">
       <div className="mb-5 flex items-start justify-between gap-4">
         <div>
-          <p className="section-eyebrow mb-2">Weak-card rescue</p>
+          <p className="section-eyebrow mb-2">薄弱卡救援</p>
           <h2 className="text-xl font-semibold">把這張卡重新接上</h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-secondary)]">
             {rating === "again"
@@ -554,8 +601,8 @@ function WeakRepairPanel({
       </div>
 
       <div className="mt-6 flex justify-end">
-        <button type="button" onClick={onContinue} className="btn-primary">
-          下一張
+        <button type="button" onClick={onContinue} disabled={saving} className="btn-primary disabled:opacity-60">
+          {saving ? "記錄中…" : "完成修復"}
           <ArrowRight className="h-4 w-4" />
         </button>
       </div>

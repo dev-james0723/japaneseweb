@@ -28,10 +28,10 @@ export default async function MiningPage() {
       <GlassPanel className="p-6">
         <div className="mb-2 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="section-eyebrow mb-1">Sentence mining loop</p>
+            <p className="section-eyebrow mb-1">句子採礦流程</p>
             <h1 className="text-xl font-semibold">句子採礦</h1>
             <p className="mt-1 max-w-2xl text-xs leading-5 text-[var(--text-secondary)]">
-              貼上日文輸入，抽出能立刻跟讀、填空、聽音回想和產出的短句。保存後會自動進入 Review。
+              貼上日文輸入，抽出能立刻跟讀、填空、聽音回想和產出的短句。保存後會自動進入複習。
             </p>
           </div>
           <div className="text-right">

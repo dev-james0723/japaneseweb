@@ -49,7 +49,7 @@ export async function fetchWeeklyStats(
   userId: string,
 ) {
   const weekStart = weekStartDate();
-  const [{ count: newVocab }, { data: bootLogs }, { count: dueCount }] = await Promise.all([
+  const [{ count: newVocab }, { data: bootLogs }, dueReviewBreakdown] = await Promise.all([
     supabase
       .from("vocabulary_items")
       .select("id", { count: "exact", head: true })
@@ -60,11 +60,7 @@ export async function fetchWeeklyStats(
       .select("boot_date, boot_layer_done, input_layer_done, review_layer_done, output_layer_done, debug_layer_done, anki_due_completed, anki_due_total")
       .eq("user_id", userId)
       .gte("boot_date", weekStart),
-    supabase
-      .from("reviews")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", userId)
-      .lte("next_review_date", todayDateString()),
+    fetchDueReviewBreakdown(supabase, userId),
   ]);
 
   const bootDays = (bootLogs ?? []).filter((l) =>
@@ -86,7 +82,46 @@ export async function fetchWeeklyStats(
     newVocab: newVocab ?? 0,
     bootDays,
     ankiRate,
-    dueCount: dueCount ?? 0,
+    dueCount: dueReviewBreakdown.total,
+    dueVocabCount: dueReviewBreakdown.vocab,
+    dueSentencePromptCount: dueReviewBreakdown.sentence,
+  };
+}
+
+export type DueReviewBreakdown = {
+  vocab: number;
+  sentence: number;
+  total: number;
+  errors: string[];
+};
+
+export async function fetchDueReviewBreakdown(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<DueReviewBreakdown> {
+  const today = todayDateString();
+  const [vocabDue, sentenceDue] = await Promise.all([
+    supabase
+      .from("reviews")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .lte("next_review_date", today),
+    supabase
+      .from("sentence_review_prompts")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .lte("next_review_date", today),
+  ]);
+
+  const vocab = vocabDue.error ? 0 : (vocabDue.count ?? 0);
+  const sentence = sentenceDue.error ? 0 : (sentenceDue.count ?? 0);
+  return {
+    vocab,
+    sentence,
+    total: vocab + sentence,
+    errors: [vocabDue.error?.message, sentenceDue.error?.message].filter(
+      (message): message is string => Boolean(message),
+    ),
   };
 }
 

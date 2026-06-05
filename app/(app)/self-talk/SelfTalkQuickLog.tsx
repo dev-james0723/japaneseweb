@@ -27,7 +27,8 @@ export function SelfTalkQuickLog() {
         setMsg(res.error);
         return;
       }
-      setMsg("✓ 已記錄");
+      const repairCards = res.grammarDoctor?.reviewPrompts ?? 0;
+      setMsg(repairCards ? `✓ 已記錄 · ${repairCards} repair cards` : "✓ 已記錄");
       setPhrase("");
       setTimeout(() => setMsg(null), 1500);
       router.refresh();

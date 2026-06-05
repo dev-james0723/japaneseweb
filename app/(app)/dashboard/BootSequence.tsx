@@ -5,6 +5,7 @@ import Link from "next/link";
 import { CheckCircle2, ChevronRight, Circle, Clock3 } from "lucide-react";
 import { GlassPanel } from "@/components/GlassPanel";
 import { startBootSequenceAction, markLayerDoneAction } from "@/lib/actions/os";
+import { emitOSBuddyEvent } from "@/lib/os-buddy/os-buddy-events";
 import { MODE_INFO, type BootLayer, type DailyMode } from "@/lib/os/types";
 
 const STEPS: Record<DailyMode, { layer: BootLayer; minutes: number; title: string; description: string; cta?: { href: string; label: string } }[]> = {
@@ -17,14 +18,14 @@ const STEPS: Record<DailyMode, { layer: BootLayer; minutes: number; title: strin
   standard: [
     { layer: "boot", minutes: 5, title: "開機暖身", description: "自言自語日記：今日行程 + 心情 + 1 個目標。", cta: { href: "/journal", label: "日記" } },
     { layer: "review", minutes: 10, title: "到期卡取出", description: "看字、聽音、看義產出交替；吃力卡做弱點救援。", cta: { href: "/review", label: "複習" } },
-    { layer: "input", minutes: 15, title: "沉浸輸入", description: "NHK Easy / YouTube / podcast / Talk Me 任選。擷取一句去採礦。", cta: { href: "/mining", label: "句子採礦" } },
+    { layer: "input", minutes: 15, title: "沉浸輸入", description: "NHK Easy / YouTube / Podcast / Talk Me 任選。擷取一句去採礦。", cta: { href: "/mining", label: "句子採礦" } },
     { layer: "output", minutes: 10, title: "輸出", description: "日記 3–5 句 + 1 輪角色扮演，把新詞放進句子。", cta: { href: "/roleplay", label: "角色扮演" } },
     { layer: "debug", minutes: 5, title: "除錯", description: "整理學習缺口、難記卡、文法混淆；只修一個最痛點。", cta: { href: "/weekly-review", label: "回顧筆記" } },
   ],
   deep: [
     { layer: "boot", minutes: 5, title: "開機暖身", description: "詳細自言自語 + 1 個文法句型嘅例句。", cta: { href: "/journal", label: "日記" } },
     { layer: "review", minutes: 20, title: "到期卡 + 舊卡", description: "到期卡、弱點卡、上週採礦句交替做，不讓大腦猜模式。", cta: { href: "/review", label: "複習" } },
-    { layer: "input", minutes: 30, title: "深度沉浸", description: "30 分鐘 podcast/劇集 + 句子採礦 5 句，每句標出核心詞。", cta: { href: "/mining", label: "採礦" } },
+    { layer: "input", minutes: 30, title: "深度沉浸", description: "30 分鐘 Podcast／劇集 + 句子採礦 5 句，每句標出核心詞。", cta: { href: "/mining", label: "採礦" } },
     { layer: "output", minutes: 25, title: "大量輸出", description: "日記 8–10 句 + 角色扮演完整對話，重用今日弱點詞。", cta: { href: "/roleplay", label: "角色扮演" } },
     { layer: "debug", minutes: 10, title: "除錯 + 反思", description: "為 1 張難記卡重做音、字、義連結，再寫一句自己的例句。", cta: { href: "/weekly-review", label: "筆記" } },
   ],
@@ -45,12 +46,14 @@ export function BootSequence({
   function pickMode(m: DailyMode) {
     if (m === mode) return;
     setMode(m);
+    emitOSBuddyEvent({ type: "boot:start", mode: m });
     startTransition(async () => {
       await startBootSequenceAction({ mode: m });
     });
   }
 
   function toggleLayer(layer: BootLayer, done: boolean) {
+    emitOSBuddyEvent({ type: done ? "boot:layer:complete" : "boot:layer:uncomplete", layer });
     startTransition(async () => {
       await markLayerDoneAction({ layer, done });
     });
@@ -60,7 +63,7 @@ export function BootSequence({
     <GlassPanel className="p-5 md:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div>
-          <p className="section-eyebrow mb-1">Daily boot</p>
+          <p className="section-eyebrow mb-1">每日開機</p>
           <h2 className="text-lg font-semibold">開機流程</h2>
           <p className="body-pretty text-xs text-[var(--text-muted)] mt-1">{MODE_INFO[mode].description}</p>
         </div>

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { saveJournalEntryAction, noticeGapToNotebookAction } from "@/lib/actions/journal";
+import { emitOSBuddyEvent } from "@/lib/os-buddy/os-buddy-events";
 import { useRouter } from "next/navigation";
 
 export function JournalEditor() {
@@ -11,22 +12,32 @@ export function JournalEditor() {
     naturalVersion: string | null;
     noticeGaps: string[];
     corrections: any;
+    grammarDoctor?: {
+      weaknessEvents: number;
+      grammarPointsCreated: number;
+      grammarPointsUpdated: number;
+      reviewPrompts: number;
+    } | null;
     error?: string;
   } | null>(null);
   const router = useRouter();
 
   function onSubmit(runAi: boolean) {
     if (!content.trim()) return;
+    if (runAi) emitOSBuddyEvent({ type: "journal:correct:start" });
     startTransition(async () => {
       const res = await saveJournalEntryAction({ content, runAi });
       if (!res.ok) {
         setFeedback({ naturalVersion: null, noticeGaps: [], corrections: null, error: res.error });
+        if (runAi) emitOSBuddyEvent({ type: "journal:correct:error", error: res.error });
         return;
       }
+      if (runAi) emitOSBuddyEvent({ type: "journal:correct:success" });
       setFeedback({
         naturalVersion: res.naturalVersion ?? null,
         noticeGaps: res.noticeGaps ?? [],
         corrections: res.corrections,
+        grammarDoctor: res.grammarDoctor ?? null,
       });
       setContent("");
       router.refresh();
@@ -84,6 +95,20 @@ export function JournalEditor() {
                 + {g}
               </button>
             ))}
+          </div>
+        </div>
+      )}
+      {feedback?.grammarDoctor && (
+        <div className="p-3 rounded-lg bg-[var(--accent-lime-bg)]/20 border border-[var(--accent-lime)]/20">
+          <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--accent-lime)] mb-2">
+            文法醫生已保存
+          </div>
+          <div className="flex flex-wrap gap-1.5 text-xs text-[var(--text-secondary)]">
+            <span className="chip">{feedback.grammarDoctor.weaknessEvents} 個弱點事件</span>
+            <span className="chip">{feedback.grammarDoctor.reviewPrompts} 張修復卡</span>
+            <span className="chip">
+              {feedback.grammarDoctor.grammarPointsCreated + feedback.grammarDoctor.grammarPointsUpdated} 個文法節點
+            </span>
           </div>
         </div>
       )}

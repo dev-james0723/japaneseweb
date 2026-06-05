@@ -72,27 +72,54 @@ export function layerCompletion(log: OsBootLog | null): number {
   return Math.round((done / 5) * 100);
 }
 
+const FALLBACK_STUDY_TIME_ZONE = "Asia/Hong_Kong";
+
+function normalizeStudyTimeZone(value: string | undefined): string | null {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+
+  // Some hosts expose POSIX-style TZ values such as ":UTC", which Intl rejects.
+  const timeZone = trimmed.startsWith(":") ? trimmed.slice(1) : trimmed;
+  try {
+    new Intl.DateTimeFormat("en", { timeZone }).format(new Date(0));
+    return timeZone;
+  } catch {
+    return null;
+  }
+}
+
 function resolveDefaultStudyTimeZone(): string {
   const env =
     typeof process === "undefined"
       ? {}
       : (process.env as Record<string, string | undefined>);
-  return (
-    env.STUDY_TIME_ZONE ||
-    env.NEXT_PUBLIC_STUDY_TIME_ZONE ||
-    env.APP_TIME_ZONE ||
-    env.TZ ||
-    "Asia/Hong_Kong"
-  );
+  const candidates = [
+    env.STUDY_TIME_ZONE,
+    env.NEXT_PUBLIC_STUDY_TIME_ZONE,
+    env.APP_TIME_ZONE,
+    env.TZ,
+  ];
+
+  for (const candidate of candidates) {
+    const timeZone = normalizeStudyTimeZone(candidate);
+    if (timeZone) return timeZone;
+  }
+
+  return FALLBACK_STUDY_TIME_ZONE;
 }
 
 function datePartsInTimeZone(date: Date, timeZone: string) {
-  const parts = new Intl.DateTimeFormat("en", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(date);
+  let parts: Intl.DateTimeFormatPart[];
+  try {
+    parts = new Intl.DateTimeFormat("en", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(date);
+  } catch {
+    return null;
+  }
   const year = parts.find((part) => part.type === "year")?.value;
   const month = parts.find((part) => part.type === "month")?.value;
   const day = parts.find((part) => part.type === "day")?.value;

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ImageUp, Trash2, Plus, Loader2 } from "lucide-react";
 import { GlassPanel } from "@/components/GlassPanel";
 import { confirmOcrImportAction } from "@/lib/actions/ocr";
+import { emitOSBuddyEvent } from "@/lib/os-buddy/os-buddy-events";
 
 type Item = {
   japanese: string;
@@ -47,8 +48,8 @@ export function OCRUploadForm() {
       setOcrId(data.ocrId);
       setTitle(data.title);
       setItems(data.items);
-    } catch (err: any) {
-      setError("OCR 請求失敗：" + (err?.message ?? "未知"));
+    } catch (err: unknown) {
+      setError("OCR 請求失敗：" + (err instanceof Error ? err.message : "未知"));
     } finally {
       setLoading(false);
     }
@@ -68,6 +69,7 @@ export function OCRUploadForm() {
     if (!ocrId) return;
     setSaving(true);
     setError(null);
+    emitOSBuddyEvent({ type: "deck:create:start", mode: "ocr" });
     const res = await confirmOcrImportAction({
       ocrId,
       title: title || "OCR 詞庫",
@@ -76,9 +78,11 @@ export function OCRUploadForm() {
     });
     if (!res.ok) {
       setError(res.error);
+      emitOSBuddyEvent({ type: "deck:create:error", error: res.error });
       setSaving(false);
       return;
     }
+    emitOSBuddyEvent({ type: "deck:create:success", title });
     router.push(`/decks/${res.deckId}`);
     router.refresh();
   }

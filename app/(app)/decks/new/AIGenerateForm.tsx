@@ -4,6 +4,7 @@ import { useState } from "react";
 import clsx from "clsx";
 import { useRouter } from "next/navigation";
 import { Sparkles } from "lucide-react";
+import { emitOSBuddyEvent } from "@/lib/os-buddy/os-buddy-events";
 
 // Rotating topic pool — show 12 chips per visit so it feels fresh.
 const ALL_TOPICS = [
@@ -50,6 +51,7 @@ export function AIGenerateForm() {
       return;
     }
     setLoading(true);
+    emitOSBuddyEvent({ type: "deck:create:start", mode: "ai" });
     try {
       const res = await fetch("/api/ai/generate-vocabulary", {
         method: "POST",
@@ -59,13 +61,17 @@ export function AIGenerateForm() {
       const data = await res.json();
       if (!res.ok) {
         setError(data?.error ?? "生成失敗。");
+        emitOSBuddyEvent({ type: "deck:create:error", error: data?.error ?? "generate_failed" });
         setLoading(false);
         return;
       }
+      emitOSBuddyEvent({ type: "deck:create:success", title: finalTopic });
       router.push(`/decks/${data.deckId}`);
       router.refresh();
-    } catch (err: any) {
-      setError("生成失敗：" + (err?.message ?? "未知錯誤"));
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "未知錯誤";
+      setError("生成失敗：" + message);
+      emitOSBuddyEvent({ type: "deck:create:error", error: message });
       setLoading(false);
     }
   }

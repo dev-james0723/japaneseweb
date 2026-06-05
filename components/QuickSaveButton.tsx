@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Check, Loader2, Plus } from "lucide-react";
+import { emitOSBuddyEvent } from "@/lib/os-buddy/os-buddy-events";
 
 export function QuickSaveButton({
   text,
@@ -9,6 +10,7 @@ export function QuickSaveButton({
   meaningZh,
   context,
   tags = [],
+  savedFrom = "quick_save",
   className = "",
 }: {
   text: string;
@@ -16,6 +18,7 @@ export function QuickSaveButton({
   meaningZh?: string | null;
   context?: string | null;
   tags?: string[];
+  savedFrom?: string;
   className?: string;
 }) {
   const [state, setState] = useState<"idle" | "saving" | "saved" | "error">("idle");
@@ -23,6 +26,7 @@ export function QuickSaveButton({
   async function save() {
     if (state === "saving") return;
     setState("saving");
+    emitOSBuddyEvent({ type: "vocab:save:start", text });
     try {
       const res = await fetch("/api/learning/save-selection", {
         method: "POST",
@@ -33,14 +37,17 @@ export function QuickSaveButton({
           meaning_zh: meaningZh ?? "",
           context: context ?? "",
           source_path: window.location.pathname,
+          saved_from: savedFrom,
           tags,
         }),
       });
       if (!res.ok) throw new Error(await res.text());
       setState("saved");
+      emitOSBuddyEvent({ type: "vocab:save:success", text });
       window.setTimeout(() => setState("idle"), 1800);
-    } catch {
+    } catch (error) {
       setState("error");
+      emitOSBuddyEvent({ type: "vocab:save:error", error: error instanceof Error ? error.message : "save_failed" });
       window.setTimeout(() => setState("idle"), 1800);
     }
   }
@@ -67,7 +74,7 @@ export function QuickSaveButton({
       ) : (
         <Plus className="h-3.5 w-3.5" aria-hidden="true" />
       )}
-      {state === "saved" ? "已儲存" : state === "error" ? "失敗" : "Save"}
+      {state === "saved" ? "已儲存" : state === "error" ? "失敗" : "儲存"}
     </button>
   );
 }

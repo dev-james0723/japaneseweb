@@ -4,14 +4,18 @@ import { Sidebar } from "@/components/Sidebar";
 import { TopBar } from "@/components/TopBar";
 import { MotionShell } from "@/components/MotionShell";
 import { SelectionInspector } from "@/components/SelectionInspector";
-import { todayDateString } from "@/lib/os/types";
+import { OSBuddyDock } from "@/components/os-buddy/OSBuddyDock";
+import { OSBuddyShortcutController } from "@/components/os-buddy/OSBuddyShortcutController";
+import { fetchDueReviewBreakdown } from "@/lib/os/queries";
 
 export const dynamic = "force-dynamic";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createSupabaseServerClient();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError) {
+    console.error("[app layout] auth:", authError.message);
+  }
   if (!user?.id) redirect("/login");
 
   const { data: profile, error: profileError } = await supabase
@@ -24,31 +28,33 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     console.error("[app layout] profiles:", profileError.message);
   }
 
-  const today = todayDateString();
-  const { count: dueCount, error: reviewsError } = await supabase
-    .from("reviews")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", user.id)
-    .lte("next_review_date", today);
-
-  if (reviewsError) {
-    console.error("[app layout] reviews:", reviewsError.message);
+  const dueReviewBreakdown = await fetchDueReviewBreakdown(supabase, user.id);
+  if (dueReviewBreakdown.errors.length) {
+    console.error("[app layout] due reviews:", dueReviewBreakdown.errors.join(" / "));
   }
 
-  const due = reviewsError ? 0 : (dueCount ?? 0);
-
   return (
-    <div className="min-h-[100dvh] flex">
+    <div className="app-shell flex min-h-[100dvh]">
       <a href="#app-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 btn-primary">
         跳到主要內容
       </a>
       <Sidebar displayName={profile?.display_name} />
-      <div className="flex-1 min-w-0">
-        <TopBar streak={0} dueCount={due} displayName={profile?.display_name} />
-        <main id="app-content" className="px-4 md:px-6 py-6 md:py-8 max-w-[1380px] mx-auto">
+      <div className="app-workspace">
+        <TopBar
+          streak={0}
+          dueCount={dueReviewBreakdown.total}
+          dueBreakdown={{
+            vocab: dueReviewBreakdown.vocab,
+            sentence: dueReviewBreakdown.sentence,
+          }}
+          displayName={profile?.display_name}
+        />
+        <main id="app-content" className="app-content-frame mx-auto max-w-[1460px] px-4 py-5 md:px-6 md:py-7 xl:px-8">
           <MotionShell>{children}</MotionShell>
         </main>
         <SelectionInspector />
+        <OSBuddyShortcutController />
+        <OSBuddyDock />
       </div>
     </div>
   );

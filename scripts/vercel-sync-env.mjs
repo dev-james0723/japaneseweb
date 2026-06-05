@@ -38,6 +38,9 @@ function parseEnvFile(content) {
 function isSensitive(name) {
   return (
     name === "SUPABASE_SERVICE_ROLE_KEY" ||
+    name === "NEWSAPI_API_KEY" ||
+    name === "NEWS_API_KEY" ||
+    name === "YOUTUBE_API_KEY" ||
     name === "OPENAI_API_KEY" ||
     name === "GEMINI_API_KEY" ||
     name === "GOOGLE_API_KEY" ||

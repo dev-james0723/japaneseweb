@@ -6,6 +6,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { weekStartDate, monthStartDate } from "@/lib/os/types";
 import { getOpenAI, getTextModel, modelAllowsCustomTemperature } from "@/lib/ai/openai";
 import { updateOsSettingsAction } from "@/lib/actions/os";
+import { recordGoalEvent, refreshJlptReadinessSnapshot } from "@/lib/learning/jlptReadiness";
 
 const ReflectSchema = z.object({
   weekStart: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
@@ -63,7 +64,42 @@ export async function saveWeeklyReviewAction(input: z.infer<typeof ReflectSchema
     );
 
   if (error) return { ok: false as const, error: "儲存失敗：" + error.message };
+  const { data: activeGoal } = await supabase
+    .from("user_goals")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("active", true)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const goalId = (activeGoal as { id: string } | null)?.id ?? null;
+  const event = await recordGoalEvent({
+    supabase,
+    userId: user.id,
+    goalId,
+    eventType: "weekly_reflection",
+    title: "Weekly reflection saved",
+    detail: parsed.data.nextWeekFocus || parsed.data.userReflection || null,
+    metadata: {
+      week_start: wk,
+      boot_days: bootDays,
+      anki_rate: ankiRate,
+      talk_me_days: talkMeDays,
+      new_vocab: newVocab ?? 0,
+      new_grammar: newGrammar ?? 0,
+    },
+  });
+  if (event.errors.length) console.error("[weekly-review] goal event:", event.errors.join(" / "));
+  const readiness = await refreshJlptReadinessSnapshot({
+    supabase,
+    userId: user.id,
+    source: "weekly_review",
+  });
+  if (readiness.errors.length) console.error("[weekly-review] readiness:", readiness.errors.join(" / "));
+
   revalidatePath("/weekly-review");
+  revalidatePath("/goals");
+  revalidatePath("/stats");
   return { ok: true as const };
 }
 
@@ -129,6 +165,33 @@ export async function saveMonthlyAuditAction(input: z.infer<typeof MonthlySchema
 
 const QuizSchema = z.object({ weekStart: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional() });
 
+const McqQuizQuestionSchema = z.object({
+  type: z.literal("mcq"),
+  prompt_ja: z.string().min(1).max(800),
+  prompt_zh: z.string().max(800).optional(),
+  options: z.array(z.string().min(1).max(300)).min(2).max(4),
+  correct_index: z.number().int().min(0).max(3),
+  explanation_zh: z.string().max(1000).default(""),
+}).refine((question) => question.correct_index < question.options.length, {
+  message: "correct_index exceeds options length",
+  path: ["correct_index"],
+});
+
+const ClozeQuizQuestionSchema = z.object({
+  type: z.literal("cloze"),
+  sentence_ja: z.string().min(1).max(800),
+  answer: z.string().min(1).max(300),
+  hint_zh: z.string().max(800).optional(),
+});
+
+const WeeklyQuizQuestionSchema = z.union([McqQuizQuestionSchema, ClozeQuizQuestionSchema]);
+const WeeklyQuizResultSchema = z.object({
+  questions: z.array(WeeklyQuizQuestionSchema).min(1).max(10),
+});
+
+export type WeeklyQuizQuestion = z.infer<typeof WeeklyQuizQuestionSchema>;
+export type WeeklyQuizResult = z.infer<typeof WeeklyQuizResultSchema>;
+
 export async function generateWeeklyQuizAction(input: z.infer<typeof QuizSchema>) {
   const parsed = QuizSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "格式錯誤。" };
@@ -193,18 +256,62 @@ ${(grammar ?? []).map((g) => `- ${g.pattern} — ${g.core_meaning ?? ""}`).join(
   } catch (e) {
     return { ok: false as const, error: "AI 呼叫失敗：" + (e instanceof Error ? e.message : "未知") };
   }
-  let json: any;
-  try { json = JSON.parse(raw); } catch { return { ok: false as const, error: "AI 輸出格式錯誤。" }; }
+  let parsedJson: unknown;
+  try {
+    parsedJson = JSON.parse(raw);
+  } catch {
+    return { ok: false as const, error: "AI 輸出格式錯誤。" };
+  }
+
+  const quiz = WeeklyQuizResultSchema.safeParse(parsedJson);
+  if (!quiz.success) {
+    return { ok: false as const, error: "AI 小測格式驗證失敗。" };
+  }
 
   await supabase
     .from("weekly_reviews")
     .upsert(
-      { user_id: user.id, week_start_date: wk, ai_generated_quiz: json, updated_at: new Date().toISOString() },
+      { user_id: user.id, week_start_date: wk, ai_generated_quiz: quiz.data, updated_at: new Date().toISOString() },
       { onConflict: "user_id,week_start_date" },
     );
 
   revalidatePath("/weekly-review");
-  return { ok: true as const, quiz: json };
+  return { ok: true as const, quiz: quiz.data };
+}
+
+const QuizAttemptSchema = z.object({
+  weekStart: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  questionIndex: z.number().int().min(0).max(99),
+  quizType: z.enum(["mcq", "cloze"]),
+  prompt: z.string().min(1).max(1000),
+  userAnswer: z.string().max(1000),
+  correctAnswer: z.string().max(1000),
+  isCorrect: z.boolean(),
+  explanation: z.string().max(1000).optional(),
+});
+
+export async function saveWeeklyQuizAttemptAction(input: z.infer<typeof QuizAttemptSchema>) {
+  const parsed = QuizAttemptSchema.safeParse(input);
+  if (!parsed.success) return { ok: false as const, error: "格式錯誤。" };
+  const supabase = await createSupabaseServerClient();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
+  if (!user) return { ok: false as const, error: "未登入。" };
+
+  const { error } = await supabase.from("quiz_attempts").insert({
+    user_id: user.id,
+    quiz_type: `weekly_${parsed.data.quizType}`,
+    prompt: parsed.data.prompt,
+    user_answer: parsed.data.userAnswer || null,
+    correct_answer: parsed.data.correctAnswer || null,
+    is_correct: parsed.data.isCorrect,
+    explanation: parsed.data.explanation ?? null,
+  });
+  if (error) return { ok: false as const, error: "記錄失敗：" + error.message };
+
+  revalidatePath("/quizzes");
+  revalidatePath("/weekly-review");
+  return { ok: true as const };
 }
 
 export async function advancePhaseAction() {

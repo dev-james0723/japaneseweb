@@ -22,7 +22,7 @@ export default async function DecksIndexPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div className="min-w-0">
-          <p className="section-eyebrow mb-2">Deck library</p>
+          <p className="section-eyebrow mb-2">詞庫總覽</p>
           <h1 className="heading-balance text-2xl font-semibold md:text-3xl">所有詞庫</h1>
           <p className="mt-2 text-sm text-[var(--text-secondary)]">
             最近 60 個學習組，用主題、來源同日期快速回到當日內容。

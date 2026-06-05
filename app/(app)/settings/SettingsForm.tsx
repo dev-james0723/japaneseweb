@@ -56,13 +56,13 @@ export function SettingsForm({ initial }: { initial: Initial }) {
       </Row>
 
       <Row
-        label="顯示 Romaji"
-        hint="預設開啟。關閉後，全站日文漢字上方不再顯示 Romaji。"
+        label="顯示羅馬字"
+        hint="預設開啟。關閉後，全站日文漢字上方不再顯示羅馬字。"
       >
         <Toggle checked={showRomaji} onChange={setShowRomaji} />
       </Row>
 
-      <Row label="TTS 日文聲音">
+      <Row label="日文語音聲線">
         <select
           value={voice}
           onChange={(e) => setVoice(e.target.value)}

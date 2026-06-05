@@ -1,0 +1,74 @@
+[
+  {
+    "name": "home desktop",
+    "file": "artifacts/playwright/taste-home-desktop.png",
+    "metrics": {
+      "innerWidth": 1440,
+      "innerHeight": 1000,
+      "scrollWidth": 1440,
+      "scrollHeight": 1503,
+      "title": "日文快上手｜AI 日文詞彙複習系統",
+      "text": "あ\n話\n日\n日文快上手\n登入\n建立免費帳戶\n\nNIHONGO QUICK START\n\n把日文練成每天會用的能力。\n\n詞庫、輸入、回想、口說和輸出證據都放在同一個學習 OS。\n\n開始複習\n建立帳戶\n読む\n輸入\n拾う\n採礦\n思い出す\n回想\n話"
+    }
+  },
+  {
+    "name": "home mobile",
+    "file": "artifacts/playwright/taste-home-mobile.png",
+    "metrics": {
+      "innerWidth": 390,
+      "innerHeight": 1000,
+      "scrollWidth": 390,
+      "scrollHeight": 2375,
+      "title": "日文快上手｜AI 日文詞彙複習系統",
+      "text": "日\n日文快上手\n登入\n\nNIHONGO QUICK START\n\n把日文練成每天會用的能力。\n\n詞庫、輸入、回想、口說和輸出證據都放在同一個學習 OS。\n\n開始複習\n建立帳戶\n読む\n輸入\n拾う\n採礦\n思い出す\n回想\n話す\n輸出\n網\nAI 生"
+    }
+  },
+  {
+    "name": "login desktop",
+    "file": "artifacts/playwright/taste-login-desktop.png",
+    "metrics": {
+      "innerWidth": 1440,
+      "innerHeight": 1000,
+      "scrollWidth": 1440,
+      "scrollHeight": 1000,
+      "title": "日文快上手｜AI 日文詞彙複習系統",
+      "text": "あ\n話\n日\nDAILY LEARNER OS\n今日的日文，不用重新開機。\n\n回到你的詞庫、輸入材料、複習隊列和輸出任務，接住昨天留下的學習脈絡。\n\n登入\n\n歡迎回來，繼續今日的日文學習。\n\n使用 Google 繼續\n或使用電郵\n電子郵件\n密"
+    }
+  },
+  {
+    "name": "login mobile",
+    "file": "artifacts/playwright/taste-login-mobile.png",
+    "metrics": {
+      "innerWidth": 390,
+      "innerHeight": 900,
+      "scrollWidth": 390,
+      "scrollHeight": 900,
+      "title": "日文快上手｜AI 日文詞彙複習系統",
+      "text": "登入\n\n歡迎回來，繼續今日的日文學習。\n\n使用 Google 繼續\n或使用電郵\n電子郵件\n密碼\n登入\n\n還沒有帳戶？ 建立免費帳戶"
+    }
+  },
+  {
+    "name": "signup desktop",
+    "file": "artifacts/playwright/taste-signup-desktop.png",
+    "metrics": {
+      "innerWidth": 1440,
+      "innerHeight": 1000,
+      "scrollWidth": 1440,
+      "scrollHeight": 1000,
+      "title": "日文快上手｜AI 日文詞彙複習系統",
+      "text": "あ\n話\n日\nNIHONGO QUICK START\n從第一天開始，把單字織成網。\n\n建立帳戶後，你的輸入、複習、口說和寫作證據會留在同一條學習線上。\n\n建立帳戶\n\n開始你的日文知識網絡。\n\n使用 Google 註冊\n或使用電郵\n顯示名稱\n電"
+    }
+  },
+  {
+    "name": "signup mobile",
+    "file": "artifacts/playwright/taste-signup-mobile.png",
+    "metrics": {
+      "innerWidth": 390,
+      "innerHeight": 1000,
+      "scrollWidth": 390,
+      "scrollHeight": 1000,
+      "title": "日文快上手｜AI 日文詞彙複習系統",
+      "text": "建立帳戶\n\n開始你的日文知識網絡。\n\n使用 Google 註冊\n或使用電郵\n顯示名稱\n電子郵件\n密碼\n建立帳戶\n\n已有帳戶？ 登入"
+    }
+  }
+]

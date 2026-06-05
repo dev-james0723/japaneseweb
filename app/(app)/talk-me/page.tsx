@@ -28,7 +28,7 @@ export default async function TalkMePage() {
   return (
     <div className="space-y-6">
       <GlassPanel className="p-6">
-        <p className="section-eyebrow mb-1">External speaking log</p>
+        <p className="section-eyebrow mb-1">外部口說紀錄</p>
         <h1 className="mb-1 text-xl font-semibold">Talk Me 紀錄</h1>
         <p className="mb-4 max-w-2xl text-xs leading-5 text-[var(--text-secondary)]">
           完成外部課程後記錄時間、跟讀和對話。最有用的一句會被保存為可複習的句子提示。

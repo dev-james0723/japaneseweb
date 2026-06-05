@@ -7,6 +7,8 @@ import { getOpenAI } from "@/lib/ai/openai";
 import { runSentenceMining } from "@/lib/ai/runSentenceMining";
 import { type MinedSentence } from "@/lib/ai/schemas/sentenceMining";
 import { buildSentenceReviewPrompts } from "@/lib/sentenceReview";
+import { recordContentInteractionForUser } from "@/lib/actions/contentInteractions";
+import { recordGrammarExposures } from "@/lib/learning/grammarMastery";
 
 const MineSchema = z.object({
   text: z.string().min(10).max(5000),
@@ -15,7 +17,7 @@ const MineSchema = z.object({
   sourceTitle: z.string().max(200).optional(),
 });
 
-export async function mineSentencesAction(input: z.infer<typeof MineSchema>) {
+export async function mineSentencesAction(input: z.input<typeof MineSchema>) {
   const parsed = MineSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "格式錯誤。" };
   const supabase = await createSupabaseServerClient();
@@ -43,6 +45,8 @@ const SaveSchema = z.object({
   sourceType: z.enum(["nhk", "youtube", "talk_me", "manual", "podcast", "article", "other"]).default("manual"),
   sourceUrl: z.string().optional().nullable(),
   sourceTitle: z.string().max(200).optional().nullable(),
+  createGrammarPoints: z.boolean().optional().default(false),
+  grammarSourceReference: z.string().max(500).optional().nullable(),
   sentences: z.array(z.object({
     sentence_ja: z.string(),
     kana_reading: z.string().nullable().optional(),
@@ -54,7 +58,7 @@ const SaveSchema = z.object({
   })).min(1).max(10),
 });
 
-export async function saveMinedSentencesAction(input: z.infer<typeof SaveSchema>) {
+export async function saveMinedSentencesAction(input: z.input<typeof SaveSchema>) {
   const parsed = SaveSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "格式錯誤。" };
   const supabase = await createSupabaseServerClient();
@@ -91,7 +95,134 @@ export async function saveMinedSentencesAction(input: z.infer<typeof SaveSchema>
     }
   }
 
+  let grammarPoints = 0;
+  if (parsed.data.createGrammarPoints) {
+    grammarPoints = await createGrammarPointsFromMinedSentences({
+      supabase,
+      userId: user.id,
+      sourceReference:
+        parsed.data.grammarSourceReference ||
+        parsed.data.sourceUrl ||
+        parsed.data.sourceTitle ||
+        null,
+      sentences: parsed.data.sentences,
+    });
+  }
+
+  const grammarPatterns = Array.from(
+    new Set(rows.flatMap((row) => row.key_grammar).map((pattern) => pattern.trim()).filter(Boolean)),
+  ).slice(0, 12);
+  if (grammarPatterns.length) {
+    const grammarExposure = await recordGrammarExposures({
+      supabase,
+      userId: user.id,
+      exposures: grammarPatterns.map((pattern) => ({
+        pattern,
+        exposureType: "mine",
+        result: "seen",
+        sourceSurface: parsed.data.sourceType === "article" ? "article_mining" : "manual_mining",
+        sourceReference: parsed.data.grammarSourceReference || parsed.data.sourceUrl || parsed.data.sourceTitle || "/mining",
+        evidenceText: rows.find((row) => row.key_grammar.includes(pattern))?.sentence_ja ?? null,
+        metadata: {
+          source_type: parsed.data.sourceType,
+          source_title: parsed.data.sourceTitle ?? null,
+          create_grammar_points: parsed.data.createGrammarPoints,
+        },
+      })),
+    });
+    if (grammarExposure.errors.length) {
+      console.error("[mining] grammar exposure:", grammarExposure.errors.join(" / "));
+    }
+  }
+
+  await recordContentInteractionForUser({
+    supabase,
+    userId: user.id,
+    input: {
+      interactionType: "mine",
+      sourceSurface: "manual_mining",
+      deepLink: parsed.data.sourceUrl || "/mining",
+      itemsCreated: rows.length + (warning ? 0 : prompts.length) + grammarPoints,
+      metadata: {
+        source_type: parsed.data.sourceType,
+        source_title: parsed.data.sourceTitle ?? null,
+        sentences_saved: rows.length,
+        review_prompts: warning ? 0 : prompts.length,
+        grammar_points: grammarPoints,
+        warning,
+      },
+    },
+  });
+
   revalidatePath("/mining");
   revalidatePath("/review");
-  return { ok: true as const, saved: rows.length, reviewPrompts: warning ? 0 : prompts.length, warning };
+  revalidatePath("/daily-feed");
+  if (grammarPoints) revalidatePath("/grammar");
+  return { ok: true as const, saved: rows.length, reviewPrompts: warning ? 0 : prompts.length, grammarPoints, warning };
+}
+
+async function createGrammarPointsFromMinedSentences({
+  supabase,
+  userId,
+  sourceReference,
+  sentences,
+}: {
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>;
+  userId: string;
+  sourceReference: string | null;
+  sentences: z.infer<typeof SaveSchema>["sentences"];
+}) {
+  const examplesByPattern = new Map<
+    string,
+    {
+      sentence_ja: string;
+      translation_zh: string;
+      difficulty_jlpt?: "N5" | "N4" | "N3" | "N2" | "N1" | null;
+    }
+  >();
+
+  for (const sentence of sentences) {
+    for (const rawPattern of sentence.key_grammar.slice(0, 3)) {
+      const pattern = rawPattern.trim();
+      if (!pattern || examplesByPattern.has(pattern)) continue;
+      examplesByPattern.set(pattern, {
+        sentence_ja: sentence.sentence_ja,
+        translation_zh: sentence.translation_zh,
+        difficulty_jlpt: sentence.difficulty_jlpt ?? null,
+      });
+    }
+  }
+
+  const patterns = Array.from(examplesByPattern.keys()).slice(0, 12);
+  if (!patterns.length) return 0;
+
+  const { data: existing } = await supabase
+    .from("grammar_points")
+    .select("pattern")
+    .eq("user_id", userId)
+    .in("pattern", patterns);
+  const existingPatterns = new Set((existing ?? []).map((item) => item.pattern));
+
+  const rows = patterns
+    .filter((pattern) => !existingPatterns.has(pattern))
+    .map((pattern) => {
+      const example = examplesByPattern.get(pattern);
+      return {
+        user_id: userId,
+        pattern,
+        jlpt_level: example?.difficulty_jlpt ?? null,
+        core_meaning: "由 Professor 輸出採礦建立；請補充核心意思同接續。",
+        examples: example ? [{ ja: example.sentence_ja, zh: example.translation_zh }] : [],
+        source_type: "professor_output",
+        source_reference: sourceReference,
+      };
+    });
+
+  if (!rows.length) return 0;
+  const { data, error } = await supabase.from("grammar_points").insert(rows).select("id");
+  if (error) {
+    console.error("[professor mining] grammar points:", error.message);
+    return 0;
+  }
+  return data?.length ?? 0;
 }

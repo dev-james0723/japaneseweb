@@ -9,6 +9,7 @@ import { type MinedSentence } from "@/lib/ai/schemas/sentenceMining";
 import { buildSentenceReviewPrompts } from "@/lib/sentenceReview";
 import { todayDateString } from "@/lib/os/types";
 import { patchBootLogAction } from "@/lib/actions/os";
+import { recordGrammarExposures } from "@/lib/learning/grammarMastery";
 
 const LogSchema = z.object({
   durationMinutes: z.number().int().min(1).max(600),
@@ -75,6 +76,31 @@ export async function logTalkMeSessionAction(input: z.infer<typeof LogSchema>) {
       } else {
         reviewPrompts = prompts.length;
       }
+      const grammarTags = Array.from(new Set((enriched.key_grammar ?? []).map((tag) => tag.trim()).filter(Boolean))).slice(0, 8);
+      if (grammarTags.length) {
+        const grammarExposure = await recordGrammarExposures({
+          supabase,
+          userId: user.id,
+          exposures: grammarTags.map((pattern) => ({
+            pattern,
+            jlptLevel: enriched.difficulty_jlpt ?? null,
+            exposureType: d.shadowingDone ? "shadow" : "production",
+            result: d.shadowingDone ? "seen" : "produced",
+            sourceSurface: "talk_me_saved_sentence",
+            sourceReference: `/talk-me?date=${today}`,
+            minedSentenceId: savedSentence.id,
+            evidenceText: enriched.sentence_ja,
+            metadata: {
+              duration_minutes: d.durationMinutes,
+              shadowing_done: d.shadowingDone,
+              conversation_mode_done: d.conversationModeDone,
+            },
+          })),
+        });
+        if (grammarExposure.errors.length) {
+          console.error("[talk-me] grammar exposure:", grammarExposure.errors.join(" / "));
+        }
+      }
     }
   }
 
@@ -96,6 +122,7 @@ export async function logTalkMeSessionAction(input: z.infer<typeof LogSchema>) {
   revalidatePath("/dashboard");
   revalidatePath("/mining");
   revalidatePath("/review");
+  revalidatePath("/grammar-map");
   return { ok: true as const, reviewPrompts, warning: miningWarning };
 }
 

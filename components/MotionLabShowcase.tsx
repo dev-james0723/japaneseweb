@@ -137,7 +137,7 @@ export function MotionLabShowcase({
         <GlassPanel className="relative min-h-[260px] overflow-hidden p-5">
           <div className="relative z-10 flex items-start justify-between gap-4">
             <div>
-              <p className="section-eyebrow">Motion Lab</p>
+              <p className="section-eyebrow">影片實驗室</p>
               <h1 className="mt-3 text-2xl font-semibold leading-tight md:text-3xl">
                 {latest?.titleZh ?? "文化課素材生成台"}
               </h1>
@@ -185,12 +185,12 @@ export function MotionLabShowcase({
           ) : (
             <GlassPanel className="motion-lab-item p-5">
               <p className="text-sm font-semibold">
-                {latest ? "MP4 render queued" : "未有文章影片 job"}
+                {latest ? "MP4 生成任務已排程" : "未有文章影片任務"}
               </p>
               <p className="mt-2 text-xs leading-6 text-[var(--text-muted)]">
                 {latest
                   ? latest.job.outputs.message
-                  : "生成文化文章後，這裡會顯示該文章的 motion manifest。"}
+                  : "生成文化文章後，這裡會顯示該文章的影片清單。"}
               </p>
               {latest ? (
                 <a
@@ -198,7 +198,7 @@ export function MotionLabShowcase({
                   className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.055] px-3 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:border-[var(--accent-lime)]/35 hover:text-white"
                 >
                   <FileCode2 className="h-4 w-4 text-[var(--accent-lime)]" aria-hidden="true" />
-                  Render handoff
+                  生成交接檔
                 </a>
               ) : null}
             </GlassPanel>
@@ -234,7 +234,7 @@ export function MotionLabShowcase({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-[var(--accent-lime)]" aria-hidden="true" />
-            <h2 className="text-sm font-semibold">Pipeline status</h2>
+            <h2 className="text-sm font-semibold">流程狀態</h2>
           </div>
           <div className="flex flex-wrap gap-2">
             {culturalMotionPipelineStatus.map((status) => (
@@ -249,7 +249,7 @@ export function MotionLabShowcase({
       <GlassPanel className="motion-lab-item p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="section-eyebrow">Manifest</p>
+            <p className="section-eyebrow">素材清單</p>
             <h2 className="mt-2 text-sm font-semibold">/api/motion/assets</h2>
           </div>
           <a
@@ -270,12 +270,12 @@ function StatusChip({ status }: { status: CulturalArticleMotionJobStatus }) {
     status === "completed" ? CheckCircle2 : status === "failed" ? AlertTriangle : Clapperboard;
   const label =
     status === "completed"
-      ? "Completed"
+      ? "已完成"
       : status === "rendering"
-        ? "Rendering"
+        ? "生成中"
         : status === "failed"
-          ? "Failed"
-          : "Queued";
+          ? "失敗"
+          : "已排程";
   return (
     <span className="chip chip-active inline-flex items-center gap-1.5">
       <Icon className="h-3.5 w-3.5" aria-hidden="true" />
@@ -291,8 +291,8 @@ function articleRenderPreviews(job: CulturalArticleMotionJob) {
     ...(files.remotionMp4
       ? [{
           id: "remotion-preview",
-          title: "Remotion render",
-          subtitle: "Article-specific MP4",
+          title: "Remotion 生成影片",
+          subtitle: "文章專屬 MP4",
           src: files.remotionMp4,
           poster: files.remotionStill ?? "",
         }]
@@ -300,8 +300,8 @@ function articleRenderPreviews(job: CulturalArticleMotionJob) {
     ...(files.hyperframesMp4
       ? [{
           id: "hyperframes-preview",
-          title: "Hyperframes render",
-          subtitle: "Article-specific GSAP render",
+          title: "HyperFrames 生成影片",
+          subtitle: "文章專屬 GSAP 影片",
           src: files.hyperframesMp4,
           poster: files.hyperframesStill ?? "",
         }]
@@ -316,7 +316,7 @@ function articleMotionArtifacts(articleId: string, job: CulturalArticleMotionJob
       ? [{
           id: "remotion-mp4",
           title: "Remotion MP4",
-          meta: "Article-specific render",
+          meta: "文章專屬生成檔",
           href: files.remotionMp4,
           icon: "film" as const,
         }]
@@ -324,16 +324,16 @@ function articleMotionArtifacts(articleId: string, job: CulturalArticleMotionJob
     ...(files?.hyperframesMp4
       ? [{
           id: "hyperframes-mp4",
-          title: "Hyperframes MP4",
-          meta: "Article-specific render",
+          title: "HyperFrames MP4",
+          meta: "文章專屬生成檔",
           href: files.hyperframesMp4,
           icon: "clapperboard" as const,
         }]
       : []),
     {
       id: "handoff",
-      title: "Render handoff",
-      meta: "Manifest + commands",
+      title: "生成交接檔",
+      meta: "清單與指令",
       href: job.outputs.handoffUrl || `/api/motion/cultural-article/${articleId}/handoff`,
       icon: "code" as const,
     },

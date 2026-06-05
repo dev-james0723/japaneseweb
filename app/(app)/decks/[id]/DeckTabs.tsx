@@ -324,7 +324,7 @@ function WordsTab({ items }: { items: Item[] }) {
     <div className="space-y-4">
       <p className="text-xs text-[var(--text-muted)]">
         建立詞庫後，系統會<strong className="text-[var(--text-secondary)]">自動</strong>
-        為每個單字補上 Romaji、例句、詞性、JLPT、諧音提示、動詞／形容詞變化，並用同一套資料更新「分組」與「例句」分頁；完成後亦會嘗試建立「圖像記憶」分鏡圖與「連結」分頁的混合例句。
+        為每個單字補上羅馬字、例句、詞性、JLPT、諧音提示、動詞／形容詞變化，並用同一套資料更新「分組」與「例句」分頁；完成後亦會嘗試建立「圖像記憶」分鏡圖與「連結」分頁的混合例句。
       </p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {items.map((v) => (
@@ -504,7 +504,7 @@ function ImagesTab({
   async function copyPrompt(text: string) {
     try {
       await navigator.clipboard.writeText(text);
-      setCopyNote("已複製英文 image prompt。");
+      setCopyNote("已複製英文圖像提示詞。");
       setTimeout(() => setCopyNote(null), 2200);
     } catch {
       setCopyNote("無法複製，請手動選取。");
@@ -708,7 +708,7 @@ function ImagesTab({
                         className="btn-ghost text-xs inline-flex items-center gap-1"
                       >
                         <Copy className="w-3 h-3" />
-                        複製 image prompt
+                        複製圖像提示詞
                       </button>
                     </div>
                   </GlassPanel>

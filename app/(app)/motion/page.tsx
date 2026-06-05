@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
+import { LearnerRecapPanel } from "./LearnerRecapPanel";
 import { MotionLabShowcase } from "@/components/MotionLabShowcase";
 import { buildCulturalArticleRecapProps } from "@/lib/motion/culturalArticleMotion";
 import { fetchLatestUserCulturalArticleMotionJob } from "@/lib/motion/culturalArticleMotionJobs";
+import { fetchLearnerRecapOverview } from "@/lib/motion/learnerRecapJobs";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -13,23 +15,29 @@ export default async function MotionLabPage() {
   } = await supabase.auth.getSession();
   if (!session?.user) redirect("/login");
 
-  const latest = await fetchLatestUserCulturalArticleMotionJob(supabase, session.user.id);
+  const [latest, recapOverview] = await Promise.all([
+    fetchLatestUserCulturalArticleMotionJob(supabase, session.user.id),
+    fetchLearnerRecapOverview(supabase, session.user.id),
+  ]);
   return (
-    <MotionLabShowcase
-      latest={latest
-        ? {
-            articleId: latest.articleId,
-            titleZh: latest.titleZh,
-            props: buildCulturalArticleRecapProps({
-              titleJa: latest.article.title_ja,
-              titleZh: latest.article.title_zh,
-              summaryZh: latest.article.summary_zh,
-              vocab: latest.article.key_vocab.map((item) => item.word),
-              manifest: latest.job.manifest,
-            }),
-            job: latest.job,
-          }
-        : null}
-    />
+    <div className="space-y-5">
+      <LearnerRecapPanel overview={recapOverview} />
+      <MotionLabShowcase
+        latest={latest
+          ? {
+              articleId: latest.articleId,
+              titleZh: latest.titleZh,
+              props: buildCulturalArticleRecapProps({
+                titleJa: latest.article.title_ja,
+                titleZh: latest.article.title_zh,
+                summaryZh: latest.article.summary_zh,
+                vocab: latest.article.key_vocab.map((item) => item.word),
+                manifest: latest.job.manifest,
+              }),
+              job: latest.job,
+            }
+          : null}
+      />
+    </div>
   );
 }

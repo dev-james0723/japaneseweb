@@ -76,7 +76,7 @@ export function CulturalArticleRecap({
           transform: `translateY(${(1 - titleProgress) * 24}px)`,
         }}
       >
-        <div style={styles.kicker}>Article Recap</div>
+        <div style={styles.kicker}>文章回顧</div>
         <h1 style={{ ...styles.title, fontSize: titleSize }}>
           {trimForFrame(titleJa, 44)}
         </h1>
@@ -92,7 +92,7 @@ export function CulturalArticleRecap({
           transform: `translateY(${(1 - evidence) * 24}px)`,
         }}
       >
-        <div style={styles.smallTitle}>Culture detail</div>
+        <div style={styles.smallTitle}>文化細節</div>
         <div style={styles.evidenceCard}>
           <div style={styles.evidenceAccent} />
           <div>
@@ -100,7 +100,7 @@ export function CulturalArticleRecap({
             <p style={styles.cardText}>{trimForFrame(firstScene.onScreenText, 110)}</p>
           </div>
           <div style={styles.evidenceBlock}>
-            <div style={styles.evidenceLabel}>Article evidence</div>
+            <div style={styles.evidenceLabel}>文章證據</div>
             <p style={styles.evidenceText}>{trimForFrame(firstScene.articleEvidence, 150)}</p>
           </div>
         </div>
@@ -113,7 +113,7 @@ export function CulturalArticleRecap({
           transform: `translateY(${(1 - language) * 24}px)`,
         }}
       >
-        <div style={styles.smallTitle}>Language hooks</div>
+        <div style={styles.smallTitle}>語言線索</div>
         <div style={styles.languageGrid}>
           <div style={styles.wordGrid}>
             {(keywords.length ? keywords : vocab).slice(0, 4).map((word, index) => (
@@ -133,7 +133,7 @@ export function CulturalArticleRecap({
             <p style={styles.languageText}>
               {trimForFrame(secondScene.onScreenText || secondScene.articleEvidence, 118)}
             </p>
-            <p style={styles.mood}>{visualMood || "article-specific cultural explainer"}</p>
+            <p style={styles.mood}>{visualMood || "文章專屬文化說明"}</p>
           </div>
         </div>
       </section>

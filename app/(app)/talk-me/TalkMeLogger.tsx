@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { logTalkMeSessionAction } from "@/lib/actions/talkMe";
+import { emitOSBuddyEvent } from "@/lib/os-buddy/os-buddy-events";
 
 export function TalkMeLogger() {
   const [duration, setDuration] = useState(10);
@@ -26,6 +27,8 @@ export function TalkMeLogger() {
         addToMined: addToMined && !!sentence,
       });
       if (!res.ok) { setMsg(res.error); return; }
+      emitOSBuddyEvent({ type: "talk-me:logged", minutes: duration });
+      if (sentence) emitOSBuddyEvent({ type: "mining:save", sentence });
       setMsg(
         res.warning
           ? `已記錄。${res.warning}`

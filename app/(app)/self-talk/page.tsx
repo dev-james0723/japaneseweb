@@ -8,8 +8,8 @@ export const dynamic = "force-dynamic";
 const STAGE_DESCRIPTIONS: Record<number, string> = {
   1: "單字級：腦中浮現單個日文字（鍵、財布…）",
   2: "短句級：「お腹空いた」「眠い」",
-  3: "敘述級：用日文 narrate 一個 thought",
-  4: "完整 self-talk：用日文 plan、reflect、自言自語",
+  3: "敘述級：用日文描述一個想法",
+  4: "完整自言自語：用日文計劃、反思、自己同自己講",
 };
 
 export default async function SelfTalkPage() {

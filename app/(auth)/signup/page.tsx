@@ -18,8 +18,23 @@ export default function SignupPage() {
   }, [state]);
 
   return (
-    <main className="flex min-h-[100dvh] items-center justify-center overflow-x-hidden px-4 py-10">
-      <div className="glass-panel w-full max-w-[28rem] animate-glassFadeIn p-6 sm:p-8">
+    <main className="auth-shell overflow-x-hidden">
+      <section className="auth-intro">
+        <div className="mb-6 flex items-center gap-3">
+          <span className="brand-mark text-sm font-semibold">日</span>
+          <span className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+            日文快上手
+          </span>
+        </div>
+        <h1 className="heading-balance text-5xl font-semibold leading-tight">
+          從第一天開始，把單字織成網。
+        </h1>
+        <p className="mt-5 max-w-md text-sm leading-7 text-[var(--text-secondary)]">
+          建立帳戶後，你的輸入、複習、口說和寫作證據會留在同一條學習線上。
+        </p>
+      </section>
+
+      <div className="glass-panel auth-card mx-auto animate-glassFadeIn p-6 sm:p-8 lg:mx-0">
         <h1 className="text-2xl font-semibold mb-2">建立帳戶</h1>
         <p className="text-sm text-[var(--text-secondary)] mb-6">
           開始你的日文知識網絡。

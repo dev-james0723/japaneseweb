@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { mineSentencesAction, saveMinedSentencesAction } from "@/lib/actions/mining";
+import { emitOSBuddyEvent } from "@/lib/os-buddy/os-buddy-events";
 
 type Candidate = {
   sentence_ja: string;
@@ -64,6 +65,7 @@ export function MiningClient() {
         sentences: toSave,
       });
       if (!res.ok) { setMsg(res.error); return; }
+      toSave.forEach((sentence) => emitOSBuddyEvent({ type: "mining:save", sentence: sentence.sentence_ja }));
       setMsg(
         res.warning
           ? `已儲存 ${res.saved} 句。${res.warning}`

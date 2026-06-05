@@ -10,10 +10,12 @@ import {
   generateCulturalArticle,
   resolveCategoryForUser,
   saveCulturalArticle,
+  saveDailyLessonFromCulturalArticle,
   suggestCulturalTopic,
 } from "@/lib/cultural/generateArticle";
-import { generateCulturalArticleThumbnail } from "@/lib/cultural/generateThumbnail";
 import { generateCantoneseLensIllustration } from "@/lib/cultural/generateSectionImage";
+import { generateCulturalArticleThumbnail } from "@/lib/cultural/generateThumbnail";
+import { buildCulturalArticleVisuals } from "@/lib/cultural/articleVisuals";
 import {
   GenerateArticleRequestSchema,
   type GeneratedCulturalArticle,
@@ -106,8 +108,16 @@ export async function POST(req: Request) {
     article,
     category,
   });
+  const articleVisuals = await buildCulturalArticleVisuals({
+    article,
+    category,
+    cantoneseLensImage,
+  });
 
   let contentId: string | null = null;
+  let dailyLesson:
+    | { id: string | null; assets?: unknown; warning?: string }
+    | null = null;
   let motionJob:
     | { id: string; status: string; handoff_url: string }
     | null = null;
@@ -125,6 +135,7 @@ export async function POST(req: Request) {
         thumbnailUrl,
         cantoneseLensImageUrl: cantoneseLensImage?.imageUrl ?? null,
         cantoneseLensImagePrompt: cantoneseLensImage?.prompt ?? null,
+        articleVisuals,
       });
       contentId = id;
       const job = await createCulturalArticleMotionJob(supabase, {
@@ -141,6 +152,19 @@ export async function POST(req: Request) {
         };
       }
       if (as_daily_pick) {
+        const lesson = await saveDailyLessonFromCulturalArticle(supabase, article, {
+          userId: user.id,
+          culturalContentId: id,
+          lessonDate: today,
+          category,
+        });
+        if (!lesson.ok && !/does not exist|schema cache|PGRST205/i.test(lesson.reason)) {
+          console.error("[cultural generate] daily lesson:", lesson.reason);
+        }
+        if (lesson.ok) {
+          dailyLesson = { id: lesson.lessonId, assets: lesson.assets, warning: lesson.warning };
+          if (lesson.warning) console.error("[cultural generate] review assets:", lesson.warning);
+        }
         await supabase
           .from("cultural_preferences")
           .update({
@@ -174,7 +198,9 @@ export async function POST(req: Request) {
     ai_picked_topic: aiPickedTopic,
     thumbnail_url: thumbnailUrl,
     cantonese_lens_image: cantoneseLensImage,
+    article_visuals: articleVisuals,
     content_id: contentId,
+    daily_lesson: dailyLesson,
     motion_job: motionJob,
   });
 }

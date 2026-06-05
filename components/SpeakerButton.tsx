@@ -3,6 +3,7 @@
 import { Volume2, Loader2 } from "lucide-react";
 import { useState, useRef } from "react";
 import clsx from "clsx";
+import { emitOSBuddyEvent } from "@/lib/os-buddy/os-buddy-events";
 
 type Size = "sm" | "md" | "lg";
 const sizeMap: Record<Size, string> = {
@@ -55,7 +56,9 @@ export function SpeakerButton({
       audio.onerror = () => setState("error");
       setState("playing");
       await audio.play();
+      emitOSBuddyEvent({ type: "tts:play", text });
     } catch {
+      emitOSBuddyEvent({ type: "tts:error", error: "tts_failed" });
       setState("error");
       setTimeout(() => setState("idle"), 1500);
     }

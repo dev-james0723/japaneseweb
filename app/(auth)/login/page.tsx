@@ -21,8 +21,23 @@ function LoginForm() {
   }, [state]);
 
   return (
-    <main className="flex min-h-[100dvh] items-center justify-center overflow-x-hidden px-4 py-10">
-      <div className="glass-panel w-full max-w-[28rem] animate-glassFadeIn p-6 sm:p-8">
+    <main className="auth-shell overflow-x-hidden">
+      <section className="auth-intro">
+        <div className="mb-6 flex items-center gap-3">
+          <span className="brand-mark text-sm font-semibold">日</span>
+          <span className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+            每日學習系統
+          </span>
+        </div>
+        <h1 className="heading-balance text-5xl font-semibold leading-tight">
+          今日的日文，不用重新開機。
+        </h1>
+        <p className="mt-5 max-w-md text-sm leading-7 text-[var(--text-secondary)]">
+          回到你的詞庫、輸入材料、複習隊列和輸出任務，接住昨天留下的學習脈絡。
+        </p>
+      </section>
+
+      <div className="glass-panel auth-card mx-auto animate-glassFadeIn p-6 sm:p-8 lg:mx-0">
         <h1 className="text-2xl font-semibold mb-2">登入</h1>
         <p className="text-sm text-[var(--text-secondary)] mb-6">
           歡迎回來，繼續今日的日文學習。
@@ -94,8 +109,8 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <main className="flex min-h-[100dvh] items-center justify-center overflow-x-hidden px-4 py-10">
-          <div className="glass-panel w-full max-w-[28rem] animate-glassFadeIn p-6 sm:p-8">
+        <main className="auth-shell overflow-x-hidden">
+          <div className="glass-panel auth-card mx-auto animate-glassFadeIn p-6 sm:p-8 lg:mx-0">
             <p className="text-sm text-[var(--text-secondary)] text-center">載入中…</p>
           </div>
         </main>

@@ -141,7 +141,7 @@ export function CulturalArticleMotionPanel({
         <div className="mt-4 px-2 pb-2">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="section-eyebrow">Motion export</p>
+              <p className="section-eyebrow">影片匯出</p>
               <h2 className="mt-2 text-sm font-semibold">文章影片素材包</h2>
             </div>
             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-white/10 bg-white/[0.045] text-[var(--accent-lime)]">
@@ -210,7 +210,7 @@ export function CulturalArticleMotionPanel({
                     method: "POST",
                   });
                   const json = await res.json();
-                  if (!res.ok) throw new Error(json.error ?? "Render request failed");
+                  if (!res.ok) throw new Error(json.error ?? "影片生成請求失敗");
                   setJob({
                     id: json.job.id,
                     status: json.job.status,
@@ -221,7 +221,7 @@ export function CulturalArticleMotionPanel({
                   });
                   router.refresh();
                 } catch (requestError) {
-                  setError(requestError instanceof Error ? requestError.message : "Render request failed");
+                  setError(requestError instanceof Error ? requestError.message : "影片生成請求失敗");
                 } finally {
                   setPending(false);
                 }
@@ -234,7 +234,7 @@ export function CulturalArticleMotionPanel({
               ) : (
                 <RefreshCw className="h-4 w-4 text-[var(--accent-lime)]" aria-hidden="true" />
               )}
-              {job ? "Request render" : "Queue video"}
+              {job ? "重新生成" : "排程影片"}
             </button>
             {error ? (
               <p className="article-motion-item text-xs leading-5 text-red-300">{error}</p>
@@ -252,14 +252,14 @@ export function CulturalArticleMotionPanel({
 function StatusChip({ status }: { status: CulturalArticleMotionJobStatus | null }) {
   const label =
     status === "completed"
-      ? "Completed"
+      ? "已完成"
       : status === "rendering"
-        ? "Rendering"
+        ? "生成中"
         : status === "failed"
-          ? "Failed"
+          ? "失敗"
           : status === "queued"
-            ? "Queued"
-            : "Not queued";
+            ? "已排程"
+            : "未排程";
   const Icon =
     status === "completed" ? CheckCircle2 : status === "failed" ? AlertTriangle : Clapperboard;
   return (
@@ -282,33 +282,33 @@ function articleMotionArtifacts(
           shortTitle: "Remotion MP4",
           icon: "film" as const,
           href: files.remotionMp4,
-          meta: "Article-specific MP4",
+          meta: "文章專屬 MP4",
         }]
       : []),
     ...(files?.remotionStill
       ? [{
           id: "remotion-still",
-          shortTitle: "Remotion still",
+          shortTitle: "Remotion 靜態圖",
           icon: "image" as const,
           href: files.remotionStill,
-          meta: "Article-specific poster",
+          meta: "文章專屬封面",
         }]
       : []),
     ...(files?.hyperframesMp4
       ? [{
           id: "hyperframes-mp4",
-          shortTitle: "Hyperframes MP4",
+          shortTitle: "HyperFrames MP4",
           icon: "clapperboard" as const,
           href: files.hyperframesMp4,
-          meta: "Article-specific GSAP render",
+          meta: "文章專屬 GSAP 影片",
         }]
       : []),
     {
       id: "render-handoff",
-      shortTitle: "Render handoff",
+      shortTitle: "生成交接檔",
       icon: "code" as const,
       href: outputs?.handoffUrl || `/api/motion/cultural-article/${articleId}/handoff`,
-      meta: "Manifest + render commands",
+      meta: "清單與生成指令",
     },
   ];
 }

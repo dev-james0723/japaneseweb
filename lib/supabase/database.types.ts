@@ -62,6 +62,7 @@ export type Database = {
         Row: {
           ai_summary_ja: string | null
           ai_summary_zh: string | null
+          article_visuals: Json
           body_ja: string | null
           body_paragraphs: Json | null
           body_zh: string | null
@@ -95,6 +96,7 @@ export type Database = {
         Insert: {
           ai_summary_ja?: string | null
           ai_summary_zh?: string | null
+          article_visuals?: Json
           body_ja?: string | null
           body_paragraphs?: Json | null
           body_zh?: string | null
@@ -128,6 +130,7 @@ export type Database = {
         Update: {
           ai_summary_ja?: string | null
           ai_summary_zh?: string | null
+          article_visuals?: Json
           body_ja?: string | null
           body_paragraphs?: Json | null
           body_zh?: string | null
@@ -321,6 +324,185 @@ export type Database = {
           preferred_podcasts?: string[]
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      notification_events: {
+        Row: {
+          body: string
+          completed_after_open: boolean
+          completed_at: string | null
+          created_at: string
+          deep_link: string
+          dismissed_at: string | null
+          event_date: string
+          id: string
+          metadata: Json
+          opened: boolean
+          opened_at: string | null
+          reason: string
+          scheduled_at: string
+          sent_at: string | null
+          status: string
+          title: string
+          type: string
+          updated_at: string
+          user_id: string
+          user_local_time: string
+        }
+        Insert: {
+          body: string
+          completed_after_open?: boolean
+          completed_at?: string | null
+          created_at?: string
+          deep_link: string
+          dismissed_at?: string | null
+          event_date?: string
+          id?: string
+          metadata?: Json
+          opened?: boolean
+          opened_at?: string | null
+          reason: string
+          scheduled_at: string
+          sent_at?: string | null
+          status?: string
+          title: string
+          type: string
+          updated_at?: string
+          user_id: string
+          user_local_time: string
+        }
+        Update: {
+          body?: string
+          completed_after_open?: boolean
+          completed_at?: string | null
+          created_at?: string
+          deep_link?: string
+          dismissed_at?: string | null
+          event_date?: string
+          id?: string
+          metadata?: Json
+          opened?: boolean
+          opened_at?: string | null
+          reason?: string
+          scheduled_at?: string
+          sent_at?: string | null
+          status?: string
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+          user_local_time?: string
+        }
+        Relationships: []
+      }
+      notification_outcomes: {
+        Row: {
+          created_at: string
+          deep_link: string | null
+          event_id: string | null
+          id: string
+          metadata: Json
+          occurred_at: string
+          outcome_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          deep_link?: string | null
+          event_id?: string | null
+          id?: string
+          metadata?: Json
+          occurred_at?: string
+          outcome_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          deep_link?: string | null
+          event_id?: string | null
+          id?: string
+          metadata?: Json
+          occurred_at?: string
+          outcome_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_outcomes_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "notification_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_preferences: {
+        Row: {
+          adaptive_timing_enabled: boolean
+          browser_notifications_enabled: boolean
+          created_at: string
+          curiosity_enabled: boolean
+          daily_plan_enabled: boolean
+          enabled: boolean
+          exam_mode_enabled: boolean
+          goal_pressure_enabled: boolean
+          last_planned_at: string | null
+          max_per_day: number
+          morning_time: string
+          output_nudge_enabled: boolean
+          quiet_end: string
+          quiet_start: string
+          review_due_enabled: boolean
+          streak_rescue_enabled: boolean
+          time_zone: string
+          updated_at: string
+          user_id: string
+          weekly_review_enabled: boolean
+        }
+        Insert: {
+          adaptive_timing_enabled?: boolean
+          browser_notifications_enabled?: boolean
+          created_at?: string
+          curiosity_enabled?: boolean
+          daily_plan_enabled?: boolean
+          enabled?: boolean
+          exam_mode_enabled?: boolean
+          goal_pressure_enabled?: boolean
+          last_planned_at?: string | null
+          max_per_day?: number
+          morning_time?: string
+          output_nudge_enabled?: boolean
+          quiet_end?: string
+          quiet_start?: string
+          review_due_enabled?: boolean
+          streak_rescue_enabled?: boolean
+          time_zone?: string
+          updated_at?: string
+          user_id: string
+          weekly_review_enabled?: boolean
+        }
+        Update: {
+          adaptive_timing_enabled?: boolean
+          browser_notifications_enabled?: boolean
+          created_at?: string
+          curiosity_enabled?: boolean
+          daily_plan_enabled?: boolean
+          enabled?: boolean
+          exam_mode_enabled?: boolean
+          goal_pressure_enabled?: boolean
+          last_planned_at?: string | null
+          max_per_day?: number
+          morning_time?: string
+          output_nudge_enabled?: boolean
+          quiet_end?: string
+          quiet_start?: string
+          review_due_enabled?: boolean
+          streak_rescue_enabled?: boolean
+          time_zone?: string
+          updated_at?: string
+          user_id?: string
+          weekly_review_enabled?: boolean
         }
         Relationships: []
       }
@@ -1022,6 +1204,27 @@ export type Database = {
           default_jlpt_level: string | null
           display_name: string | null
           id: string
+          os_buddy_birthday_day: number | null
+          os_buddy_birthday_enabled: boolean | null
+          os_buddy_birthday_last_celebrated_on: string | null
+          os_buddy_birthday_last_reminder_on: string | null
+          os_buddy_birthday_month: number | null
+          os_buddy_birthday_reminder_enabled: boolean | null
+          os_buddy_birthday_show_age: boolean | null
+          os_buddy_birthday_timezone: string | null
+          os_buddy_birthday_year: number | null
+          os_buddy_enabled: boolean | null
+          os_buddy_free_roam_enabled: boolean | null
+          os_buddy_free_roam_intensity: string | null
+          os_buddy_free_roam_near_home_only: boolean | null
+          os_buddy_free_roam_return_home: boolean | null
+          os_buddy_interaction_stats: Json | null
+          os_buddy_name: string | null
+          os_buddy_onboarding_completed: boolean | null
+          os_buddy_pet_id: string | null
+          os_buddy_position: Json | null
+          os_buddy_shortcut_settings: Json | null
+          os_buddy_unlocked_pets: Json | null
           preferred_voice: string | null
           show_romaji: boolean
           updated_at: string
@@ -1032,6 +1235,27 @@ export type Database = {
           default_jlpt_level?: string | null
           display_name?: string | null
           id: string
+          os_buddy_birthday_day?: number | null
+          os_buddy_birthday_enabled?: boolean | null
+          os_buddy_birthday_last_celebrated_on?: string | null
+          os_buddy_birthday_last_reminder_on?: string | null
+          os_buddy_birthday_month?: number | null
+          os_buddy_birthday_reminder_enabled?: boolean | null
+          os_buddy_birthday_show_age?: boolean | null
+          os_buddy_birthday_timezone?: string | null
+          os_buddy_birthday_year?: number | null
+          os_buddy_enabled?: boolean | null
+          os_buddy_free_roam_enabled?: boolean | null
+          os_buddy_free_roam_intensity?: string | null
+          os_buddy_free_roam_near_home_only?: boolean | null
+          os_buddy_free_roam_return_home?: boolean | null
+          os_buddy_interaction_stats?: Json | null
+          os_buddy_name?: string | null
+          os_buddy_onboarding_completed?: boolean | null
+          os_buddy_pet_id?: string | null
+          os_buddy_position?: Json | null
+          os_buddy_shortcut_settings?: Json | null
+          os_buddy_unlocked_pets?: Json | null
           preferred_voice?: string | null
           show_romaji?: boolean
           updated_at?: string
@@ -1042,6 +1266,27 @@ export type Database = {
           default_jlpt_level?: string | null
           display_name?: string | null
           id?: string
+          os_buddy_birthday_day?: number | null
+          os_buddy_birthday_enabled?: boolean | null
+          os_buddy_birthday_last_celebrated_on?: string | null
+          os_buddy_birthday_last_reminder_on?: string | null
+          os_buddy_birthday_month?: number | null
+          os_buddy_birthday_reminder_enabled?: boolean | null
+          os_buddy_birthday_show_age?: boolean | null
+          os_buddy_birthday_timezone?: string | null
+          os_buddy_birthday_year?: number | null
+          os_buddy_enabled?: boolean | null
+          os_buddy_free_roam_enabled?: boolean | null
+          os_buddy_free_roam_intensity?: string | null
+          os_buddy_free_roam_near_home_only?: boolean | null
+          os_buddy_free_roam_return_home?: boolean | null
+          os_buddy_interaction_stats?: Json | null
+          os_buddy_name?: string | null
+          os_buddy_onboarding_completed?: boolean | null
+          os_buddy_pet_id?: string | null
+          os_buddy_position?: Json | null
+          os_buddy_shortcut_settings?: Json | null
+          os_buddy_unlocked_pets?: Json | null
           preferred_voice?: string | null
           show_romaji?: boolean
           updated_at?: string

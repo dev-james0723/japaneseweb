@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { GlassPanel } from "@/components/GlassPanel";
 import { weekStartDate } from "@/lib/os/types";
 import { WeeklyReviewForm } from "./WeeklyReviewForm";
+import type { WeeklyQuizResult } from "@/lib/actions/weeklyReview";
 
 export const dynamic = "force-dynamic";
 
@@ -42,7 +43,7 @@ export default async function WeeklyReviewPage() {
   const totals = (bootLogs ?? []).reduce((a, l) => ({ c: a.c + (l.anki_due_completed ?? 0), t: a.t + (l.anki_due_total ?? 0) }), { c: 0, t: 0 });
   const ankiRate = totals.t > 0 ? totals.c / totals.t : null;
 
-  const quiz = existing?.ai_generated_quiz as { questions?: any[] } | null;
+  const quiz = normalizeWeeklyQuiz(existing?.ai_generated_quiz);
 
   return (
     <div className="space-y-6">
@@ -84,6 +85,13 @@ export default async function WeeklyReviewPage() {
       )}
     </div>
   );
+}
+
+function normalizeWeeklyQuiz(value: unknown): WeeklyQuizResult | null {
+  if (!value || typeof value !== "object") return null;
+  const questions = (value as { questions?: unknown }).questions;
+  if (!Array.isArray(questions)) return null;
+  return { questions: questions as WeeklyQuizResult["questions"] };
 }
 
 function Stat({ label, value, accent }: { label: string; value: string; accent: "lime" | "sky" | "sakura" | "amber" }) {

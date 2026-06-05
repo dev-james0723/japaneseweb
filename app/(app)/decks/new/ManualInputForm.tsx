@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { createDeckFromTextAction } from "@/lib/actions/decks";
+import { emitOSBuddyEvent } from "@/lib/os-buddy/os-buddy-events";
 
 export function ManualInputForm() {
   const [pending, startTransition] = useTransition();
@@ -9,9 +10,13 @@ export function ManualInputForm() {
 
   function onSubmit(formData: FormData) {
     setError(null);
+    emitOSBuddyEvent({ type: "deck:create:start", mode: "manual" });
     startTransition(async () => {
       const res = await createDeckFromTextAction(formData);
-      if (res && !res.ok) setError(res.error);
+      if (res && !res.ok) {
+        emitOSBuddyEvent({ type: "deck:create:error", error: res.error });
+        setError(res.error);
+      }
     });
   }
 
@@ -53,7 +58,7 @@ export function ManualInputForm() {
           className="glass-input w-full font-jp leading-relaxed"
         />
         <p className="text-[11px] text-[var(--text-muted)] mt-1.5">
-          可以只貼單字，也可以用「日文｜中文」格式。Romaji 與其他欄位會在後續階段 5 由 AI 補上。
+          可以只貼單字，也可以用「日文｜中文」格式。羅馬字與其他欄位會在後續階段 5 由 AI 補上。
         </p>
       </div>
 

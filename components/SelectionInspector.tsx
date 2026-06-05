@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { BookOpen, Check, Copy, ExternalLink, Loader2, Save, Sparkles, X } from "lucide-react";
+import { BookOpen, Check, Copy, ExternalLink, Loader2, Pickaxe, Save, Sparkles, X } from "lucide-react";
 import { SpeakerButton } from "@/components/SpeakerButton";
+import { emitOSBuddyEvent } from "@/lib/os-buddy/os-buddy-events";
 
 type Usage = {
   expression: string;
@@ -32,7 +33,10 @@ export function SelectionInspector() {
   const [inspect, setInspect] = useState<InspectResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [mined, setMined] = useState(false);
+  const [minedPromptCount, setMinedPromptCount] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState<string | null>(null);
   const popoverRef = useRef<HTMLDivElement | null>(null);
   const selectionTimerRef = useRef<number | null>(null);
 
@@ -41,7 +45,10 @@ export function SelectionInspector() {
     setInspect(null);
     setLoading(false);
     setSaved(false);
+    setMined(false);
+    setMinedPromptCount(null);
     setCopied(false);
+    setCopyError(null);
   }, []);
 
   useEffect(() => {
@@ -70,7 +77,10 @@ export function SelectionInspector() {
       setInspect(null);
       setLoading(true);
       setSaved(false);
+      setMined(false);
+      setMinedPromptCount(null);
       setCopied(false);
+      setCopyError(null);
     }
 
     function onSelectionEvent() {
@@ -96,6 +106,7 @@ export function SelectionInspector() {
   useEffect(() => {
     if (!popover?.text) return;
     const controller = new AbortController();
+    emitOSBuddyEvent({ type: "selection:inspect:start", text: popover.text });
     fetch("/api/learning/inspect-selection", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -106,42 +117,85 @@ export function SelectionInspector() {
         if (!res.ok) throw new Error(await res.text());
         return res.json() as Promise<InspectResult>;
       })
-      .then((data) => setInspect(data))
-      .catch(() =>
+      .then((data) => {
+        setInspect(data);
+        emitOSBuddyEvent({ type: "selection:inspect:success", text: popover.text });
+      })
+      .catch(() => {
+        emitOSBuddyEvent({ type: "selection:inspect:error", error: "inspect_failed" });
         setInspect({
           text: popover.text,
           reading: "",
           meaning_zh: "暫時未能取得 AI 解釋，但你仍然可以儲存、複製或播放。",
           nuance_zh: "",
           common_usages: [],
-        }),
-      )
+        });
+      })
       .finally(() => setLoading(false));
     return () => controller.abort();
   }, [popover?.text, popover?.context]);
 
   async function copyText(text: string) {
-    await navigator.clipboard.writeText(text);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1400);
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error("clipboard_unavailable");
+      await navigator.clipboard.writeText(text);
+      setCopyError(null);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1400);
+    } catch {
+      setCopied(false);
+      setCopyError("Clipboard permission denied. Select the text manually to copy.");
+      window.setTimeout(() => setCopyError(null), 2600);
+    }
   }
 
   async function saveText() {
     if (!popover) return;
-    const res = await fetch("/api/learning/save-selection", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        text: popover.text,
-        reading: inspect?.reading ?? "",
-        meaning_zh: inspect?.meaning_zh ?? "",
-        context: popover.context,
-        source_path: window.location.pathname,
-      }),
-    });
-    if (res.ok) {
+    emitOSBuddyEvent({ type: "vocab:save:start", text: popover.text });
+    try {
+      const res = await fetch("/api/learning/save-selection", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: popover.text,
+          reading: inspect?.reading ?? "",
+          meaning_zh: inspect?.meaning_zh ?? "",
+          context: popover.context,
+          source_path: window.location.pathname,
+        }),
+      });
+      if (!res.ok) throw new Error(await res.text());
       setSaved(true);
+      emitOSBuddyEvent({ type: "vocab:save:success", text: popover.text });
       window.setTimeout(() => setSaved(false), 1600);
+    } catch (error) {
+      emitOSBuddyEvent({ type: "vocab:save:error", error: error instanceof Error ? error.message : "save_failed" });
+    }
+  }
+
+  async function mineText() {
+    if (!popover) return;
+    try {
+      const res = await fetch("/api/learning/mine-selection", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: popover.text,
+          reading: inspect?.reading ?? "",
+          meaning_zh: inspect?.meaning_zh ?? "",
+          context: popover.context,
+          source_title: document.title.replace(/\s*\|.*$/, ""),
+          source_path: window.location.pathname,
+        }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const payload = (await res.json().catch(() => null)) as { review_prompts?: number } | null;
+      setMinedPromptCount(typeof payload?.review_prompts === "number" ? payload.review_prompts : null);
+      setMined(true);
+      emitOSBuddyEvent({ type: "mining:save", sentence: popover.text });
+      window.setTimeout(() => setMined(false), 1800);
+    } catch (error) {
+      emitOSBuddyEvent({ type: "vocab:save:error", error: error instanceof Error ? error.message : "mine_failed" });
     }
   }
 
@@ -189,7 +243,12 @@ export function SelectionInspector() {
           {saved ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : <Save className="h-3.5 w-3.5" aria-hidden="true" />}
           {saved ? "Saved" : "Save"}
         </button>
+        <button type="button" onClick={mineText} className="btn-ghost px-3 py-1.5 text-xs">
+          {mined ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : <Pickaxe className="h-3.5 w-3.5" aria-hidden="true" />}
+          {mined ? (minedPromptCount !== null ? `${minedPromptCount} prompts` : "Mined") : "Mine"}
+        </button>
       </div>
+      {copyError ? <p className="-mt-1 mb-3 text-xs text-[var(--warning)]">{copyError}</p> : null}
 
       {loading ? (
         <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.045] p-3 text-sm text-[var(--text-secondary)]">

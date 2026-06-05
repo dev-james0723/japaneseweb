@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, Circle, Send, Target } from "lucide-react";
 import { GlassPanel } from "@/components/GlassPanel";
+import { SpeakerButton } from "@/components/SpeakerButton";
 import type { CanDoGoal } from "@/lib/learning/communicationGoals";
+import { emitOSBuddyEvent } from "@/lib/os-buddy/os-buddy-events";
 
 export type Difficulty = "N5" | "N4" | "N3" | "N2" | "N1";
 
@@ -24,11 +26,79 @@ type AssistantReply = {
   rubric?: RubricItem[];
   reusable_patterns?: string[];
   next_assignment?: string | null;
+  session_id?: string | null;
+  grammar_doctor?: {
+    weaknessEvents: number;
+    grammarPointsCreated: number;
+    grammarPointsUpdated: number;
+    reviewPrompts: number;
+  } | null;
 };
 
 type Message =
   | { role: "user"; content: string }
   | { role: "assistant"; content: string; data: AssistantReply };
+
+const PERSONAS = [
+  {
+    id: "tokyo-friend",
+    label: "東京朋友",
+    partnerRole: "東京の友だち",
+    description: "輕鬆日常聊天",
+    speechSpeed: "放鬆",
+    politeness: "隨意",
+    correctionStrictness: "輕量",
+    allowedHints: "日常說法",
+    missionStyle: "低壓聊天",
+  },
+  {
+    id: "sensei",
+    label: "日文老師",
+    partnerRole: "日本語の先生",
+    description: "重點修正",
+    speechSpeed: "慢速",
+    politeness: "清楚中立",
+    correctionStrictness: "嚴格",
+    allowedHints: "範例句與原因",
+    missionStyle: "引導修正",
+  },
+  {
+    id: "konbini",
+    label: "便利店店員",
+    partnerRole: "コンビニ店員",
+    description: "旅行 / 服務場景",
+    speechSpeed: "明快",
+    politeness: "服務敬語",
+    correctionStrictness: "生存溝通優先",
+    allowedHints: "交易句式",
+    missionStyle: "完成購買",
+  },
+  {
+    id: "senpai",
+    label: "職場前輩",
+    partnerRole: "会社の先輩",
+    description: "商務日文",
+    speechSpeed: "穩定",
+    politeness: "職場語氣",
+    correctionStrictness: "語域優先",
+    allowedHints: "更安全的商務說法",
+    missionStyle: "專業交流",
+  },
+  {
+    id: "examiner",
+    label: "JLPT 考官",
+    partnerRole: "JLPT 試験官",
+    description: "壓力模式",
+    speechSpeed: "受控",
+    politeness: "中立",
+    correctionStrictness: "分數導向",
+    allowedHints: "最低限度提示",
+    missionStyle: "評分壓力",
+  },
+] as const;
+
+type PersonaId = (typeof PERSONAS)[number]["id"];
+const defaultPersona = PERSONAS[0];
 
 export function RoleplayClient({
   defaultDifficulty,
@@ -46,24 +116,33 @@ export function RoleplayClient({
     [goalId, goals],
   );
   const [scenario, setScenario] = useState(currentGoal?.roleplay.scenario ?? "");
-  const [partnerRole, setPartnerRole] = useState(currentGoal?.roleplay.partner ?? "店員");
+  const [partnerRole, setPartnerRole] = useState<string>(defaultPersona.partnerRole);
+  const [personaId, setPersonaId] = useState<PersonaId>(defaultPersona.id);
   const [difficulty, setDifficulty] = useState<Difficulty>(defaultDifficulty);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [input, setInput] = useState(currentGoal?.roleplay.starter ?? "");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const selectedPersona = useMemo(
+    () => PERSONAS.find((persona) => persona.id === personaId) ?? defaultPersona,
+    [personaId],
+  );
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
   function start(goal: CanDoGoal) {
+    emitOSBuddyEvent({ type: "roleplay:start" });
     setGoalId(goal.id);
     setScenario(goal.roleplay.scenario);
-    setPartnerRole(goal.roleplay.partner);
+    setPartnerRole(defaultPersona.partnerRole);
+    setPersonaId(defaultPersona.id);
     setInput(goal.roleplay.starter);
     setMessages([]);
+    setSessionId(null);
     setError(null);
   }
 
@@ -75,11 +154,15 @@ export function RoleplayClient({
     setMessages(next);
     setInput("");
     setPending(true);
+    if (messages.length === 0) emitOSBuddyEvent({ type: "roleplay:start" });
     try {
       const res = await fetch("/api/ai/roleplay", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          sessionId,
+          missionId: currentGoal.id,
+          personaId,
           scenario,
           partnerRole,
           difficulty,
@@ -99,7 +182,9 @@ export function RoleplayClient({
         return;
       }
       const data: AssistantReply = await res.json();
+      setSessionId(data.session_id ?? sessionId);
       setMessages([...next, { role: "assistant", content: data.reply_ja, data }]);
+      if (data.task_complete) emitOSBuddyEvent({ type: "roleplay:complete" });
     } catch (e) {
       setError(e instanceof Error ? e.message : "未知錯誤");
     } finally {
@@ -120,7 +205,7 @@ export function RoleplayClient({
       <GlassPanel className="p-4 md:p-5">
         <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div className="min-w-0">
-            <p className="section-eyebrow mb-1">Task-based roleplay</p>
+            <p className="section-eyebrow mb-1">任務式角色扮演</p>
             <h2 className="text-lg font-semibold">{currentGoal.title}</h2>
             <p className="mt-1 max-w-2xl text-sm leading-6 text-[var(--text-secondary)]">
               {currentGoal.canDo}
@@ -144,6 +229,37 @@ export function RoleplayClient({
               {goal.title}
             </button>
           ))}
+        </div>
+
+        <div className="mb-4 rounded-xl border border-white/10 bg-black/15 p-3">
+          <div className="mb-2 text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">AI 角色</div>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+            {PERSONAS.map((persona) => (
+              <button
+                key={persona.id}
+                type="button"
+                onClick={() => {
+                  setPersonaId(persona.id);
+                  setPartnerRole(persona.partnerRole);
+                }}
+                className={`rounded-xl border px-3 py-2 text-left transition-colors ${
+                  personaId === persona.id
+                    ? "border-[var(--accent-lime)]/45 bg-[var(--accent-lime-bg)]/25"
+                    : "border-white/10 bg-white/[0.025] hover:bg-white/[0.06]"
+                }`}
+              >
+                <span className="block text-xs font-medium text-white">{persona.label}</span>
+                <span className="mt-1 block text-[10px] text-[var(--text-muted)]">{persona.description}</span>
+              </button>
+            ))}
+          </div>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+            <PersonaTrait label="速度" value={selectedPersona.speechSpeed} />
+            <PersonaTrait label="禮貌度" value={selectedPersona.politeness} />
+            <PersonaTrait label="修正強度" value={selectedPersona.correctionStrictness} />
+            <PersonaTrait label="提示" value={selectedPersona.allowedHints} />
+            <PersonaTrait label="任務" value={selectedPersona.missionStyle} />
+          </div>
         </div>
 
         <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
@@ -186,10 +302,13 @@ export function RoleplayClient({
             </div>
           </div>
           <div className="rounded-xl border border-white/10 bg-white/[0.035] p-3">
-            <div className="mb-2 text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">Required phrases</div>
+            <div className="mb-2 text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">必用句</div>
             <div className="flex flex-wrap gap-1.5">
               {currentGoal.roleplay.requiredPhrases.map((phrase) => (
-                <span key={phrase} className="chip font-jp text-[10px]">{phrase}</span>
+                <span key={phrase} className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.035] px-2 py-1">
+                  <span className="font-jp text-[10px]">{phrase}</span>
+                  <SpeakerButton text={phrase} size="sm" className="!h-6 !w-6 shrink-0" />
+                </span>
               ))}
             </div>
           </div>
@@ -200,7 +319,7 @@ export function RoleplayClient({
         <div ref={scrollRef} className="max-h-[55vh] space-y-3 overflow-y-auto pr-1">
           {messages.length === 0 && (
             <div className="py-12 text-center text-xs text-[var(--text-muted)]">
-              用 starter 開始，或者直接輸入你自己的日文回應。
+              用起步句開始，或者直接輸入你自己的日文回應。
             </div>
           )}
           {messages.map((m, i) => (
@@ -235,11 +354,23 @@ export function RoleplayClient({
   );
 }
 
+function PersonaTrait({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-white/10 bg-white/[0.025] px-3 py-2">
+      <div className="text-[9px] uppercase tracking-[0.16em] text-[var(--text-muted)]">{label}</div>
+      <div className="mt-1 text-xs text-[var(--text-secondary)]">{value}</div>
+    </div>
+  );
+}
+
 function AssistantBubble({ reply }: { reply: AssistantReply }) {
   return (
     <div className="flex justify-start">
       <div className="max-w-[88%] space-y-2 rounded-2xl bg-white/5 p-3">
-        <div className="font-jp text-sm">{reply.reply_ja}</div>
+        <div className="flex items-start justify-between gap-3">
+          <div className="font-jp text-sm leading-6">{reply.reply_ja}</div>
+          {reply.reply_ja ? <SpeakerButton text={reply.reply_ja} size="sm" className="shrink-0" /> : null}
+        </div>
         <div className="font-jp text-[10px] text-[var(--text-muted)]">{reply.kana}</div>
         <div className="text-xs text-[var(--text-secondary)]">{reply.translation_zh}</div>
         {reply.correction && (
@@ -250,8 +381,11 @@ function AssistantBubble({ reply }: { reply: AssistantReply }) {
         )}
         {reply.suggestion_ja && (
           <div className="mt-2 rounded-lg border border-[var(--accent-sakura)]/20 bg-[var(--accent-sakura)]/10 p-2 text-xs">
-            <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--accent-sakura)]">Next line</div>
-            <div className="font-jp">{reply.suggestion_ja}</div>
+            <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--accent-sakura)]">下一句</div>
+            <div className="mt-1 flex items-start justify-between gap-3">
+              <div className="font-jp leading-5">{reply.suggestion_ja}</div>
+              <SpeakerButton text={reply.suggestion_ja} size="sm" className="shrink-0" />
+            </div>
             {reply.suggestion_zh && <div className="mt-0.5 text-[var(--text-muted)]">{reply.suggestion_zh}</div>}
           </div>
         )}
@@ -259,7 +393,7 @@ function AssistantBubble({ reply }: { reply: AssistantReply }) {
           <div className="mt-2 rounded-lg border border-white/10 bg-black/15 p-2 text-xs">
             <div className="mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">
               {reply.task_complete ? <CheckCircle2 className="h-3.5 w-3.5 text-[var(--accent-lime)]" /> : <Circle className="h-3.5 w-3.5" />}
-              Task rubric
+              任務評分表
             </div>
             <div className="space-y-1.5">
               {reply.rubric.map((item) => (
@@ -288,6 +422,14 @@ function AssistantBubble({ reply }: { reply: AssistantReply }) {
         {reply.next_assignment && (
           <div className="border-t border-white/10 pt-2 text-xs leading-5 text-[var(--text-secondary)]">
             <span className="font-medium text-white">下一個任務：</span>{reply.next_assignment}
+          </div>
+        )}
+        {reply.grammar_doctor && reply.grammar_doctor.weaknessEvents > 0 && (
+          <div className="rounded-lg border border-[var(--accent-lime)]/20 bg-[var(--accent-lime-bg)]/15 p-2 text-xs">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--accent-lime)]">文法醫生</div>
+            <div className="mt-1 text-[var(--text-secondary)]">
+              已儲存 {reply.grammar_doctor.reviewPrompts} 張修復卡 · {reply.grammar_doctor.grammarPointsCreated + reply.grammar_doctor.grammarPointsUpdated} 個文法節點
+            </div>
           </div>
         )}
       </div>
