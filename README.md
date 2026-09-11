@@ -4,6 +4,15 @@ AI-driven Japanese vocabulary review web app — daily decks, Romaji-assisted re
 
 > 單字唔係一粒粒記。單字要織成一張網，先真正入到腦。
 
+## Portfolio snapshot
+
+A user-facing Japanese vocabulary learning product built around connected memory rather than isolated flashcards.
+
+- Live demo: [japan-daily-learner.vercel.app](https://japan-daily-learner.vercel.app)
+- Product focus: daily decks, AI enrichment, OCR, TTS, spaced repetition, image memory, quizzes, and vocabulary connections
+- Engineering focus: Next.js App Router, TypeScript, Supabase, server-only provider calls, and row-level security
+- Portfolio role: original product case study showing product thinking, AI integration, and learning-experience design
+
 ## Status — Phases 1–10 implemented
 
 - ✅ **Phase 1** Next.js 15 + TS + Tailwind + Liquid Glass design tokens (`Design.md`)
